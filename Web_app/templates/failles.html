@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Failles (CVE)</h2>
+
+<form method="get" id="filtersForm" class="controls">
+  <input type="search" name="q" placeholder="Recherche (name/target/state)"
+         value="{{ q }}" oninput="debounceSubmit('q', 300)">
+
+  <!-- Target exacte : on attend un peu que l'utilisateur finisse -->
+  <input type="text" name="target" placeholder="Target exacte"
+         value="{{ target }}"
+         oninput="debounceSubmit('target', 1000)"
+         onblur="autoSubmitNow()">
+
+  <select name="state" onchange="autoSubmitNow()">
+    <option value="" {{ ''==state and 'selected' or '' }}>Tous états</option>
+    <option value="open"   {{ state=='open' and 'selected' or '' }}>open</option>
+    <option value="closed" {{ state=='closed' and 'selected' or '' }}>closed</option>
+  </select>
+
+  <select name="sort" onchange="autoSubmitNow()">
+    <option value="id_asc"   {{ sort=='id_asc' and 'selected' or '' }}>ID ↑</option>
+    <option value="id_desc"  {{ sort=='id_desc' and 'selected' or '' }}>ID ↓</option>
+    <option value="name_asc" {{ sort=='name_asc' and 'selected' or '' }}>Name A→Z</option>
+    <option value="name_desc"{{ sort=='name_desc' and 'selected' or '' }}>Name Z→A</option>
+    <option value="target_asc"  {{ sort=='target_asc' and 'selected' or '' }}>Target A→Z</option>
+    <option value="target_desc" {{ sort=='target_desc' and 'selected' or '' }}>Target Z→A</option>
+  </select>
+
+  <select name="size" onchange="autoSubmitNow()">
+    {% for s in [10,25,50,100] %}
+      <option value="{{s}}" {{ s==size and 'selected' or '' }}>{{s}} / page</option>
+    {% endfor %}
+  </select>
+
+  <!-- FastAPI : request.url_for -->
+  <a class="btn" href="{{ request.url_for('failles_page') }}">Réinitialiser</a>
+</form>
+
+<script>
+  const timers = {};
+  function autoSubmitNow() {
+    document.getElementById('filtersForm').submit();
+  }
+  function debounceSubmit(key, delay) {
+    if (timers[key]) clearTimeout(timers[key]);
+    timers[key] = setTimeout(autoSubmitNow, delay);
+  }
+</script>
+
+<p class="muted">{{ total }} résultat(s)</p>
+
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Target</th><th>State</th><th>Infos</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if rows %}
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.id }}</td>
+          <td class="mono">{{ r.name }}</td>
+          <td>{{ r.target }}</td>
+          <td><span class="state {{ r.state }}">{{ r.state }}</span></td>
+          <td>
+            <details>
+              <summary>Voir ({{ r.infos|length }} clés)</summary>
+              <pre>{{ r.infos | json_pretty | safe }}</pre>
+            </details>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="5">Aucun résultat</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{# Macro pour fabriquer les URLs de pagination en gardant les filtres #}
+{% macro qlink(p) -%}
+  {{ request.url_for('failles_page')
+     ~ '?q=' ~ q
+     ~ '&target=' ~ target
+     ~ '&state=' ~ state
+     ~ '&sort=' ~ sort
+     ~ '&size=' ~ size
+     ~ '&page=' ~ p
+  }}
+{%- endmacro %}
+
+<div class="pagination">
+  {% set prev = page - 1 if page > 1 else 1 %}
+  {% set next = page + 1 if page < total_pages else total_pages %}
+  <a class="btn" href="{{ qlink(1) }}">« Première</a>
+  <a class="btn" href="{{ qlink(prev) }}">‹ Préc</a>
+  <span>Page {{ page }} / {{ total_pages }}</span>
+  <a class="btn" href="{{ qlink(next) }}">Suiv ›</a>
+  <a class="btn" href="{{ qlink(total_pages) }}">Dernière »</a>
+</div>
+{% endblock %}
