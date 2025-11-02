@@ -1,0 +1,181 @@
+@startuml
+!theme mars
+' ======= Simplified and explicit UML for CLI + Shell + Nmap =======
+skinparam classAttributeIconSize 0
+note "Bowser Shell UML Application Design" as N1
+
+package "CLI (Picocli)" {
+  class MainCommand <<controller>> {
+    - ConfigManager configManager
+    + MainCommand()
+    + run(args : String[]) : int
+  }
+
+  class InstallCommand <<command>> {
+    + call() : int
+    + installDependencies() : void
+  }
+
+  class ShellCommand <<command>> {
+    - ShellService shellService
+    + call() : int
+  }
+
+  class ConfigCommand <<command>> {
+    - ConfigManager configManager
+    + call() : int
+    + locateConfig() : String
+    + editConfig() : void
+  }
+}
+
+package "Interactive Shell (JLine)" {
+  class ShellService <<service>> {
+    - LineReader reader
+    - ScanService scanner
+    - DatabaseService database
+    + ShellService(config : ConfigManager, scanner : ScanService, database : DatabaseService)
+    + start() : void
+    + stop() : void
+    + handleLine(line : String) : void
+    + configureScanInteractive() : ScanProfile
+  }
+}
+
+package "Nmap4j" {
+  class ScanService <<service>> {
+    - NmapAdapter nmap
+    - ResultParser parser
+    + ScanService(nmap : NmapAdapter, parser : ResultParser)
+    + runScan(profile : ScanProfile) : ScanResult
+  }
+
+  class NmapAdapter <<adapter>> {
+    - String nmapPath
+    + NmapAdapter(nmapPath : String)
+    + buildCommand(profile : ScanProfile) : List<String>
+    + execute(profile : ScanProfile, timeoutSec : int) : String  'XML output'
+    + isAvailable() : boolean
+  }
+
+  class ResultParser <<parser>> {
+    + parse(xml : String) : ScanResult
+    + extractVulnerabilities(xml : String) : List<Vulnerability>
+  }
+
+  class ScanProfile <<model>> {
+    - String id
+    - List<String> targets
+    - List<String> scripts
+    - Map<String,String> scriptArgs
+    - int timeoutSec
+    + validate() : boolean
+    + toNmapArgs() : List<String>
+  }
+
+  class ScanResult <<model>> {
+    - String scanId
+    - List<Vulnerability> vulnerabilities
+    + summary() : String
+  }
+}
+
+package "Database" {
+  class Vulnerability <<entity>> {
+    - String id
+    - String host
+    - Integer port
+    - String scriptId
+    - String details
+    - String severity
+    + shortSummary() : String
+  }
+
+  class DatabaseService <<service>> {
+    - DatabaseRepository repo
+    + DatabaseService(repo : DatabaseRepository)
+    + saveVulnerability(v : Vulnerability) : void
+    + saveScan(r : ScanResult) : void
+    + query(host : String) : List<Vulnerability>
+  }
+
+  interface DatabaseRepository {
+    + insertVulnerability(v : Vulnerability) : void
+    + insertScan(r : ScanResult) : void
+    + find(host : String) : List<Vulnerability>
+  }
+}
+
+package "Configuration" {
+  class ConfigManager <<service>> {
+    - String path
+    - Config config
+    + load() : Config
+    + save(c : Config) : void
+    + getConfig() : Config
+  }
+
+  class Config <<model>> {
+    - String databaseUrl
+    - String nmapPath
+    - List<String> allowedScripts
+  }
+}
+
+' ======= Relationships =======
+MainCommand --> InstallCommand
+MainCommand --> ShellCommand
+MainCommand --> ConfigCommand
+MainCommand --> ConfigManager
+
+ShellCommand --> ShellService
+ShellService --> ScanProfile
+ShellService --> DatabaseService
+ShellService --> ConfigManager
+
+ScanProfile --> ScanService
+ScanService --> NmapAdapter
+NmapAdapter --> ResultParser
+ResultParser --> ScanService
+ScanService --> ScanResult
+ScanResult --> ScanService
+
+ScanService --> DatabaseService
+
+DatabaseService ..> DatabaseRepository
+
+ScanResult <..> Vulnerability
+
+note left of "CLI (Picocli)"
+Picocli interfaces CLI avec des commandes, sous-commandes, options et autocompletion
+end note
+
+note bottom of ConfigCommand
+Ici où on configures les credentiales pour la BdD (par défaut sa lance nano ou vim ou bloc-note (Windows))
+end note
+
+note left of "Interactive Shell (JLine)"
+JLine shells interactifs dans le terminal, avec lecture de ligne, complétion, historique et coloration.
+end note
+
+note left of "InstallCommand"
+Installer toute les dépendances du projets automatiquement
+end note
+
+note left of ScanService
+C'est la classe principale pour les vulns, on commence et termine par elle
+end note
+
+note top of NmapAdapter
+C'est celui qui va run nmap et return les résultat
+end note
+
+note bottom of ResultParser
+Classe utilitaire, but rendre un format compréhensible
+end note
+
+note bottom of ScanResult
+conversion en format BdD
+end note
+
+@enduml
