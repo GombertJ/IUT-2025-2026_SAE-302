@@ -1,181 +1,171 @@
 @startuml
 !theme mars
-' ======= Simplified and explicit UML for CLI + Shell + Nmap =======
 skinparam classAttributeIconSize 0
-note "Bowser Shell UML Application Design" as N1
 
 package "CLI (Picocli)" {
-  class MainCommand <<controller>> {
-    - ConfigManager configManager
-    + MainCommand()
-    + run(args : String[]) : int
-  }
+class Main <<class>> {
+- ConfigManager configManager
+- ShellService shellService
+{static} main(args : String[]) : void
+}
 
-  class InstallCommand <<command>> {
-    + call() : int
-    + installDependencies() : void
-  }
-
-  class ShellCommand <<command>> {
-    - ShellService shellService
-    + call() : int
-  }
-
-  class ConfigCommand <<command>> {
-    - ConfigManager configManager
-    + call() : int
-    + locateConfig() : String
-    + editConfig() : void
-  }
+class Setup <<class>> {
+{static} Setup() : void
++ call() : int
++ installDependencies() : void
+}
 }
 
 package "Interactive Shell (JLine)" {
-  class ShellService <<service>> {
-    - LineReader reader
-    - ScanService scanner
-    - DatabaseService database
-    + ShellService(config : ConfigManager, scanner : ScanService, database : DatabaseService)
-    + start() : void
-    + stop() : void
-    + handleLine(line : String) : void
-    + configureScanInteractive() : ScanProfile
-  }
+class ShellService <<class>> {
+- LineReader reader
+- ModuleManager moduleManager
+- DatabaseService database
+{static} ShellService() : void
++ start() : void
++ stop() : void
++ handleUserInput(line : String) : void
+}
 }
 
-package "Nmap4j" {
-  class ScanService <<service>> {
-    - NmapAdapter nmap
-    - ResultParser parser
-    + ScanService(nmap : NmapAdapter, parser : ResultParser)
-    + runScan(profile : ScanProfile) : ScanResult
+package "Modules" {
+
+interface Module {
+
+* String getName()
+* String getDescription()
+* Map<String, Option> getOptions()
+* void setOption(String key, String value) throws IllegalArgumentException
+* Optional<String> getOption(String key)
+* void run() throws ModuleExecutionException
+* String info()
   }
 
-  class NmapAdapter <<adapter>> {
-    - String nmapPath
-    + NmapAdapter(nmapPath : String)
-    + buildCommand(profile : ScanProfile) : List<String>
-    + execute(profile : ScanProfile, timeoutSec : int) : String  'XML output'
-    + isAvailable() : boolean
+abstract class AbstractModule implements Module {
+
+* final Map<String, Option> options
+* final String name
+* final String description
+
+{static} AbstractModule(name : String, description : String)
+- void registerOption(String name, String defaultValue, String description, boolean required)
+- Map<String, Option> getOptions()
+- void setOption(String key, String value)
+- Optional<String> getOption(String key)
+- void showOptions(out : java.io.PrintStream)
+- String info()
+- String getName()
+- String getDescription()
   }
 
-  class ResultParser <<parser>> {
-    + parse(xml : String) : ScanResult
-    + extractVulnerabilities(xml : String) : List<Vulnerability>
+class Option {
+
+* final String name
+* final String defaultValue
+* String value
+* final String description
+* final boolean required
+
+{static} Option(name : String, defaultValue : String, description : String, required : boolean)
+- String getName()
+- Optional<String> getValue()
+- void setValue(String value)
+- String getDescription()
+- boolean isRequired()
+- boolean isSet()
   }
 
-  class ScanProfile <<model>> {
-    - String id
-    - List<String> targets
-    - List<String> scripts
-    - Map<String,String> scriptArgs
-    - int timeoutSec
-    + validate() : boolean
-    + toNmapArgs() : List<String>
+class NmapModule extends AbstractModule {
+
+{static} NmapModule()
+* void run() throws ModuleExecutionException
+* String getName()
+* String getDescription()
   }
 
-  class ScanResult <<model>> {
-    - String scanId
-    - List<Vulnerability> vulnerabilities
-    + summary() : String
+class ExampleExploit extends AbstractModule {
+
+{static} ExampleExploit()
+* void run() throws ModuleExecutionException
+* String getName()
+* String getDescription()
   }
+
+class ModuleManager {
+
+* final java.util.concurrent.ConcurrentMap<String, Module> modules
+
+{static} ModuleManager()
+- void register(Module m) throws IllegalArgumentException
+- Optional<Module> get(String name)
+- Collection<Module> list()
+- List<Module> search(String prefix)
+  }
+
+class ModuleExecutionException <<exception>> {
+
+{static} ModuleExecutionException(message : String)
+  }
+
 }
 
 package "Database" {
-  class Vulnerability <<entity>> {
-    - String id
-    - String host
-    - Integer port
-    - String scriptId
-    - String details
-    - String severity
-    + shortSummary() : String
-  }
+class Vulnerability <<entity>> {
+- String id
+- String host
+- Integer port
+- String scriptId
+- String details
+- String severity
+{static} Vulnerability()
++ shortSummary() : String
+}
 
-  class DatabaseService <<service>> {
-    - DatabaseRepository repo
-    + DatabaseService(repo : DatabaseRepository)
-    + saveVulnerability(v : Vulnerability) : void
-    + saveScan(r : ScanResult) : void
-    + query(host : String) : List<Vulnerability>
-  }
+class DatabaseService <<service>> {
+- DatabaseRepository repo
+{static} DatabaseService(repo : DatabaseRepository)
++ saveVulnerability(v : Vulnerability) : void
++ saveScan(scanId : String, payload : Map) : void
++ query(host : String) : List<Vulnerability>
+}
 
-  interface DatabaseRepository {
-    + insertVulnerability(v : Vulnerability) : void
-    + insertScan(r : ScanResult) : void
-    + find(host : String) : List<Vulnerability>
-  }
+interface DatabaseRepository {
++ insertVulnerability(v : Vulnerability) : void
++ insertScan(scanId : String, payload : Map) : void
++ find(host : String) : List<Vulnerability>
+}
 }
 
 package "Configuration" {
-  class ConfigManager <<service>> {
-    - String path
-    - Config config
-    + load() : Config
-    + save(c : Config) : void
-    + getConfig() : Config
-  }
+class ConfigManager <<service>> {
+- String path
+- Config config
+{static} ConfigManager
++ load() : Config
++ save(c : Config) : void
++ getConfig() : Config
+}
 
-  class Config <<model>> {
-    - String databaseUrl
-    - String nmapPath
-    - List<String> allowedScripts
-  }
+class Config <<model>> {
+- String databaseUrl
+- String nmapPath
+- List<String> allowedScripts
+}
 }
 
 ' ======= Relationships =======
-MainCommand --> InstallCommand
-MainCommand --> ShellCommand
-MainCommand --> ConfigCommand
-MainCommand --> ConfigManager
+Main --> ShellService
+Main --> ConfigManager
 
-ShellCommand --> ShellService
-ShellService --> ScanProfile
+ShellService --> ModuleManager
 ShellService --> DatabaseService
-ShellService --> ConfigManager
 
-ScanProfile --> ScanService
-ScanService --> NmapAdapter
-NmapAdapter --> ResultParser
-ResultParser --> ScanService
-ScanService --> ScanResult
-ScanResult --> ScanService
-
-ScanService --> DatabaseService
+ModuleManager "1" o-- "*" Module : manages
+AbstractModule ..|> Module
+NmapModule --|> AbstractModule
+ExampleExploit --|> AbstractModule
+AbstractModule "1" *-- "*" Option : contains
 
 DatabaseService ..> DatabaseRepository
-
-ScanResult <..> Vulnerability
-
-note left of "CLI (Picocli)"
-Picocli interfaces CLI avec des commandes, sous-commandes, options et autocompletion
-end note
-
-note bottom of ConfigCommand
-Ici où on configures les credentiales pour la BdD (par défaut sa lance nano ou vim ou bloc-note (Windows))
-end note
-
-note left of "Interactive Shell (JLine)"
-JLine shells interactifs dans le terminal, avec lecture de ligne, complétion, historique et coloration.
-end note
-
-note left of "InstallCommand"
-Installer toute les dépendances du projets automatiquement
-end note
-
-note left of ScanService
-C'est la classe principale pour les vulns, on commence et termine par elle
-end note
-
-note top of NmapAdapter
-C'est celui qui va run nmap et return les résultat
-end note
-
-note bottom of ResultParser
-Classe utilitaire, but rendre un format compréhensible
-end note
-
-note bottom of ScanResult
-conversion en format BdD
-end note
-
 @enduml
+
