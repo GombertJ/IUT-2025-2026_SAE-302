@@ -31,7 +31,7 @@ application {
     mainClass = 'bshell.App'
 }
 
-tasks.named('test') {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
+sourceSets.main.resources {
+    // exclure le dossier data qui contient les fichiers de configs et autres ...
+    exclude 'data/**'
 }
