@@ -120,13 +120,10 @@ class ModuleExecutionException <<exception>> {
 package "Database" {
 class Vulnerability <<entity>> {
 - String id
-- String host
-- Integer port
-- String scriptId
-- String details
-- String severity
-{static} Vulnerability()
-+ shortSummary() : String
+- String name
+- String target
+- String state
+- String infos
 }
 
 class DatabaseService <<service>> {
@@ -141,6 +138,14 @@ interface DatabaseRepository {
 + insertVulnerability(v : Vulnerability) : void
 + insertScan(scanId : String, payload : Map) : void
 + find(host : String) : List<Vulnerability>
+}
+class SQLiteRepository <<sql>> {
+    - java.sql.Connection conn
+    {static} SQLiteRepository(dbPath : String)
+    + insertVulnerability(v : Vulnerability) : void
+    + insertScan(scanId : String, payload : Map) : void
+    + find(host : String) : List<Vulnerability>
+    + connect() : void
 }
 }
 
@@ -166,4 +171,6 @@ ModuleManager "1" o-- "*" Module : manages
 AbstractModule "1" *-- "*" Option : contains
 
 DatabaseService ..> DatabaseRepository
+
+DatabaseRepository <|.. SQLiteRepository
 @enduml
