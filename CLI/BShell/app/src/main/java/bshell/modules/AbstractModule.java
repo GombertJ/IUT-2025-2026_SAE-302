@@ -11,7 +11,13 @@ public abstract class AbstractModule implements Module {
     private final String description;
     // LinkedHashMap garde l'ordre d'insertion (plus propre pour l'affichage)
     /*
-    J'aurais pu faire une HashMap mais le problème c'est qu'elle ne retient par l'ordre d'insertion donc à l'affichage ça marche mais c'est bizarre;
+    Pk une LinkedHashMap au lieu d'une HashMap ?
+
+    Explication : Disons que je suis sur python, j'aimerai avoir une sorte de dictionnaire (clé -> valeur) mais ordonnée.
+    Et bah sur Java, il y a une structure répondant à ses critères.
+
+    -> Linked = Ordonnée
+    -> HashMap = N'est pas ordonnée
     */ 
     protected final Map<String, Option> options = new LinkedHashMap<>();
 

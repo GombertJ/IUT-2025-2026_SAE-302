@@ -15,8 +15,7 @@ public class ModuleManager {
     public ModuleManager() {
         // Enregistrement automatique des modules disponibles au démarrage
         try {
-            register(new NmapModule());
-            // register(new ExampleExploit()); // Plus tard
+            register(new NucleiModule());
         } catch (IllegalArgumentException e) {
             System.err.println("Erreur au chargement des modules: " + e.getMessage());
         }
@@ -35,12 +34,5 @@ public class ModuleManager {
 
     public Collection<Module> list() {
         return modules.values();
-    }
-
-    // Recherche simple (ex: search "nm" trouve "nmap") [cite: 168]
-    public List<Module> search(String prefix) {
-        return modules.values().stream()
-                .filter(m -> m.getName().toLowerCase().startsWith(prefix.toLowerCase()))
-                .collect(Collectors.toList());
     }
 }

@@ -61,7 +61,6 @@ public class ShellService {
         printVersionInfo();
         printFunFact();
 
-        //Boucle principale
         while (true) {
             try {
                 // En fonction du contexte on change le prompt. Par exemple si on charge nmap
@@ -70,14 +69,14 @@ public class ShellService {
                 handleUserInput(line);
 
             } catch (UserInterruptException e) {
-                // CTRL+C : Car c'est plus pratique !
+                // CTRL+c : Car c'est plus pratique !
                 if (currentModule != null) {
                     System.out.println(YELLOW + "\n[!] Retour au menu principal." + RESET);
                     currentModule = null;
                 }
             } catch (EndOfFileException e) {
                 System.out.println(YELLOW + "\n[*] Arrêt du système..." + RESET);
-                return; // Quitte la boucle
+                return;
             } catch (Exception e) {
                 System.out.println(RED + "[-] Erreur critique shell: " + e.getMessage() + RESET);
             }
@@ -119,10 +118,6 @@ public class ShellService {
             case "help":
             case "?":
                 printHelp();
-                break;
-
-            case "banner":
-                printRandomBanner();
                 break;
 
             case "list":
@@ -230,7 +225,7 @@ public class ShellService {
         long count = moduleManager.list().size();
         System.out.println("\n       =[ " + YELLOW + "bowser-shell v0.1-dev" + RESET + " ]");
         System.out.println("+ -- --=[ " + GREEN + count + " modules loaded" + RESET + " ]");
-        System.out.println("+ -- --=[ " + RED + "Designé avec humour par l'équipe IUT" + RESET + " ]");
+        System.out.println("+ -- --=[ " + RED + "Designé par la Bowser Team" + RESET + " ]");
     }
 
     private void printFunFact() {

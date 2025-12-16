@@ -5,21 +5,20 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-// Runnable describes a class whose instances can be executed by a thread. 
+// Runnable est une instance d'une classe pouvant être exécuté par un thread
 @Command(name = "bshell", mixinStandardHelpOptions = true, version = "bshell 0.1",
         description = "Bowser Shell - A shell for automating pentesting tasks.")
 public class BShell implements Runnable {
 
-    // Option of the command //
+    // Les options
 
-    //@TODO: Add more options as needed.
     @Option(names = {"-d", "--dbPath"}, description = "path")
     String dbPath;
     
     @Option(names = {"-D", "--directory"}, description = "Working directory for the shell modules.")
     String workingDirectory;
 
-    // Override instruct the compiler that i intend to override a method in a superclass. (Runnable) 
+    // Override est une instruction qui dit au compiler que je vais modifier une méthode appartenant à la super classe
     @Override
     public void run() {
         System.out.println("BShell is running. Use --help for more information.");
