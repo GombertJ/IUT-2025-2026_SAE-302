@@ -13,6 +13,7 @@ from Web_app.database import (
     list_cves_paged,
     count_cves,
     get_cve,
+    count_db_cve_by_ip,
 )
 
 app = FastAPI(title="CVE Manager")
@@ -101,6 +102,30 @@ def failles_page(
     }
     return templates.TemplateResponse("failles.html", context)
 
+@app.get("/states", response_class=HTMLResponse)
+def states_page(
+    request: Request,
+    target: Optional[str] = Query(default="")
+    ):
+    """
+    Page HTML qui affiche des states
+    """
+    if target:
+        target = target.strip()
+        if target not in ["name", "target", "state", "cvss"]:
+            target = "name"
+    else:
+        target = "name"
+    data = count_db_cve_by_ip(target)
+    labels = [data[i][target] for i in range(len(data))]
+    counts = [data[i]['COUNT'] for i in range(len(data))]
+    context = {
+        "request": request,
+        "labels": labels,
+        "counts": counts,
+        "target": target,
+    }
+    return templates.TemplateResponse("states.html", context)
 
 # ===================== API JSON v1 ===================== #
 

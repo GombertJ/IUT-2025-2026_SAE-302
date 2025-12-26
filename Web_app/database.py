@@ -1,6 +1,7 @@
 import sqlite3, json
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
+from collections import defaultdict
 
 DB_PATH = Path(__file__).with_name("dev.db")
 
@@ -26,6 +27,22 @@ def _get_conn() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL;")   # Mode Write-Ahead Logging (Lecture/Ecriture simultané)
     return conn
 
+from faker import Faker
+import random
+import json
+
+fake = Faker()
+
+def generate_row():
+    cve_id = f"CVE-{fake.year()}-{random.randint(1000,9999):04d}"
+    product = fake.word().capitalize()
+    status = random.choice(["open", "closed"])
+    details = {
+        "cvss": round(random.uniform(0, 10), 1),
+        "notes": fake.sentence()
+    }
+    return (cve_id, product, status, details)
+
 def init_db() -> None:
     with _get_conn() as conn:
         conn.execute("""
@@ -41,11 +58,7 @@ def init_db() -> None:
         result = conn.execute("SELECT COUNT(*) AS number FROM cve;").fetchone()
         n = result["number"]
         if n == 0:
-            rows = [
-                ("CVE-2025-0001", "Android", "open", {"cvss": 7.8, "notes": "demo 1"}),
-                ("CVE-2025-0002", "Linux",   "closed", {"cvss": 5.1, "notes": "demo 2"}),
-                ("CVE-2025-0003", "WebApp",  "open", {"cvss": 9.0, "notes": "demo 3"}),
-            ]
+            rows = [generate_row() for _ in range(1000)]
             conn.executemany(
                 "INSERT INTO cve (name, target, state, infos) VALUES (?, ?, ?, ?);",
                 [(a,b,c,json.dumps(d, ensure_ascii=False)) for (a,b,c,d) in rows]
@@ -120,3 +133,30 @@ def list_cves_paged(q: Optional[str]=None, target: Optional[str]=None, state: Op
     with _get_conn() as conn:
         rows = conn.execute(sql, params).fetchall()
     return [_decode_infos(r) for r in rows]
+
+def count_db_cve_by_ip(target):
+    with _get_conn() as conn:
+        if target == "cvss":
+            rows = conn.execute("SELECT infos FROM cve").fetchall()
+
+            # Dictionnaire pour compter les occurrences par cvss
+            cvss_counts = defaultdict(int)
+
+            for row in rows:
+                infos_json = row['infos']
+                try:
+                    infos = json.loads(infos_json)
+                    cvss_value = infos.get('cvss', None)
+                    if cvss_value is not None:
+                        cvss_counts[cvss_value] += 1
+                except json.JSONDecodeError:
+                    # Gérer les erreurs de JSON si nécessaire
+                    continue
+
+            # Convertir en liste de dicts et trier par cvss numérique
+            data = [{"cvss": cvss, "COUNT": count} for cvss, count in cvss_counts.items()]
+            data = sorted(data, key=lambda x: float(x["cvss"]))
+        else:
+            query = f"SELECT {target}, COUNT(*) AS COUNT FROM cve GROUP BY {target}"
+            data = conn.execute(query).fetchall()
+        return data
