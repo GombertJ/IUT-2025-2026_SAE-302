@@ -18,6 +18,8 @@ repositories {
 dependencies {
     implementation 'info.picocli:picocli:4.7.7'
     implementation 'org.jline:jline:3.30.0'
+    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'org.xerial:sqlite-jdbc:3.51.1.0'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

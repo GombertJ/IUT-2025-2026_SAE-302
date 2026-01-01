@@ -1,139 +1,216 @@
 package bshell.modules;
 
+import bshell.configs.ConfigManager;
+import bshell.database.DatabaseService;
+import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Scanner;
 
 public class NucleiModule extends AbstractModule {
 
+    // Mapping avec gson
+    private static class NucleiResult {
+        // on demande à gson d'aller chercher la clé template-id et on met la valeur dans templateId
+        @SerializedName("template-id") String templateId; 
+        @SerializedName("matched-at") String matchedAt;
+        Info info;
+    }
+    private static class Info {
+        String name;
+        String severity;
+    }
+
+    private final Gson gson = new Gson();
+    
+    
+    // Couleurs ANSI 
+    private static final String RESET = "\u001B[0m";
+    private static final String RED = "\u001B[31m";
+    private static final String GREEN = "\u001B[32m";
+    private static final String YELLOW = "\u001B[33m";
+    private static final String BLUE = "\u001B[34m";
+    private static final String CYAN = "\u001B[36m";
+    private static final String GREY = "\u001B[90m";
+    private static final String BOLD = "\u001B[1m";
+
     public NucleiModule() {
-        super("nuclei", "Scanner de vulnérabilités Web rapide utilisant Nuclei");
-        // Nuclei travaille souvent sur des URL complètes
-        registerOption("TARGET", "http://127.0.0.1", "URL cible (ex: http://example.com)", true);
-        // Les tags permettent de filtrer (ex: cve, panel, exposure...)
-        registerOption("TAGS", "", "Filtres par tags (ex: cve,misconfig). Vide = tout scanner.", false);
-        registerOption("ARGS", "", "Arguments supplémentaires Nuclei", false);
+        super("nuclei", "Scanner de vulnérabilités Web");
+        registerOption("TARGET", "http://127.0.0.1", "URL cible", true);
+        registerOption("THREADS", "150", "Concurrence", false);
+        registerOption("RATE_LIMIT", "2000", "Requêtes/sec", false);
+        registerOption("ARGS", "", "Arguments extra", false);
     }
 
     @Override
     public void run() throws ModuleExecutionException {
         String target = getOption("TARGET").orElseThrow(() -> new ModuleExecutionException("TARGET non défini !"));
-        String tags = getOption("TAGS").orElse("");
+        String threads = getOption("THREADS").orElse("150");
+        String rateLimit = getOption("RATE_LIMIT").orElse("2000");
         String args = getOption("ARGS").orElse("");
 
-        System.out.println("[*] Démarrage de Nuclei sur " + target + "...");
-        System.out.println("[*] Les résultats s'afficheront en temps réel.\n");
-        System.out.println("=== RAPPORT NUCLEI ===");
+        System.out.println("[*] Démarrage de Nuclei sur " + target);
+
+        // Singleton
+        DatabaseService dbService = DatabaseService.getInstance();
+
+        List<NucleiResult> findings = new ArrayList<>();
 
         try {
-            List<String> command = new ArrayList<>();
-            command.add("nuclei"); // Nuclei doit être installé et dans le PATH (ou via le lien symbolique créé par Setup)
+            StringBuilder nucleiCmd = new StringBuilder();
+            String nucleiBinary = ConfigManager.getInstance().getBinaryPath("nuclei");
+            nucleiCmd.append(nucleiBinary);
+            nucleiCmd.append(" -target ").append(target);
+            nucleiCmd.append(" -c ").append(threads);
+            nucleiCmd.append(" -rl ").append(rateLimit);
+            nucleiCmd.append(" -timeout 2");
+            nucleiCmd.append(" -ni -nm -duc -j"); 
             
-            command.add("-u");
-            command.add(target);
+            if (!args.isEmpty()) nucleiCmd.append(" ").append(args.replace("-o ", ""));
 
-            // On demande du JSON pour pouvoir parser proprement
-            command.add("-json");
-            // Mode silencieux pour ne pas avoir la bannière ASCII de Nuclei qui polluerait
-            command.add("-silent");
+            /*
+            Source : https://jvns.ca/blog/2024/11/29/why-pipes-get-stuck-buffering/
 
-            if (!tags.isEmpty()) {
-                command.add("-tags");
-                command.add(tags);
+            Explication : 
+            Linux cherche à optimiser les performances. Ainsi, lorsqu’on lance une commande dans un terminal lambda, 
+            il ne cherche pas à optimiser la manière de transporter les informations entre les différents pipes ou sorties.
+            En revanche, entre programmes (donc dans notre ProcessBuilder), il va mettre les données en mémoire tampon (bufferiser), prendre son temps, puis tout relâcher d’un seul coup.
+
+            Conséquences : Le résultat est toujours le même mais la performance est grandement impacté...
+
+            Solution : script permet de simuler un terminal TTY et donc éviter les optimisation linux
+            
+            */
+            ProcessBuilder pb;
+            if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+                List<String> wrapper = new ArrayList<>();
+                wrapper.add("script"); wrapper.add("-q"); wrapper.add("-c");
+                wrapper.add(nucleiCmd.toString()); wrapper.add("/dev/null");
+                pb = new ProcessBuilder(wrapper);
+            } else {
+                List<String> winCmd = new ArrayList<>();
+                winCmd.add("cmd.exe"); winCmd.add("/c"); winCmd.add(nucleiCmd.toString());
+                pb = new ProcessBuilder(winCmd);
             }
 
-            if (!args.isEmpty()) {
-                // Gestion basique des arguments supplémentaires
-                for(String arg : args.split(" ")) command.add(arg);
-            }
-
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectErrorStream(true); // Rediriger stderr vers stdout pour capturer les erreurs aussi
+            pb.redirectErrorStream(true);
             Process process = pb.start();
+            process.getOutputStream().close();
 
-            boolean vulnFound = false;
-
-            // Lecture en streaming (ligne par ligne)
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    // Nuclei renvoie une ligne JSON par vulnérabilité trouvée
-                    if (line.startsWith("{")) {
-                        parseAndDisplayJsonLine(line);
-                        vulnFound = true;
-                    } else {
-                        // Cas d'erreur ou message informatif non JSON
-                        // On peut choisir de l'ignorer ou de l'afficher en gris/debug
-                        // System.out.println("[RAW] " + line);
+                    String cleanLine = line.replaceAll("\u001B\\[[;\\d]*m", "").trim();
+
+                    // Si la ligne commence avec "{" c'est du json.
+                    if (cleanLine.startsWith("{")) {
+                        try {
+                            NucleiResult record = gson.fromJson(cleanLine, NucleiResult.class);
+                            findings.add(record); 
+                        } catch (Exception e) {
+                            System.out.println(GREY + "   [ERR JSON] " + e.getMessage() + RESET);
+                        }
+                    } 
+                    // Debug
+                    else if (!cleanLine.isEmpty()) {
+                        System.out.println(GREY + "   [LOG] " + cleanLine + RESET);
                     }
                 }
             }
 
-            int exitCode = process.waitFor();
+            process.waitFor();
             
-            System.out.println("----------------------------------------");
-            if (exitCode == 0) {
-                if (!vulnFound) {
-                    System.out.println("[-] Aucune vulnérabilité détectée avec les filtres actuels.");
-                } else {
-                    System.out.println("[+] Scan Nuclei terminé.");
-                }
+            if (!findings.isEmpty()) {
+                printSummaryTable(findings);
+                askToSave(findings, dbService);
             } else {
-                throw new ModuleExecutionException("Nuclei a quitté avec le code erreur : " + exitCode);
+                System.out.println("\n" + GREEN + "[-] Scan terminé. Aucune vulnérabilité trouvée." + RESET);
             }
 
         } catch (Exception e) {
-            throw new ModuleExecutionException("Erreur lors de l'exécution de Nuclei: " + e.getMessage(), e);
+            throw new ModuleExecutionException("Erreur: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Parse une ligne JSON de Nuclei manuellement avec Regex.
-     * Évite d'avoir besoin de dépendances lourdes comme Jackson/Gson.
-     */
-    private void parseAndDisplayJsonLine(String jsonLine) {
-        // Extraction des champs clés
-        String templateId = extractJsonValue(jsonLine, "template-id");
-        String name = extractJsonValue(jsonLine, "name");
-        String severity = extractJsonValue(jsonLine, "severity");
-        String matchedAt = extractJsonValue(jsonLine, "matched-at");
-        String description = extractJsonValue(jsonLine, "description");
+    private void askToSave(List<NucleiResult> findings, DatabaseService dbService) {
+        System.out.println(YELLOW + "Voulez-vous sauvegarder ces " + findings.size() + " résultats en base de données ? (y/N)" + RESET);
+        System.out.print("> ");
+        
+        Scanner scanner = new Scanner(System.in);
+        String input = scanner.nextLine().trim();
 
-        // Affichage formaté
-        System.out.println("----------------------------------------");
-        System.out.println("  [!] Faille : " + (name.equals("N/A") ? templateId : name));
-        System.out.println("      Sévérité : " + severity.toUpperCase());
-        System.out.println("      URL      : " + matchedAt);
-        
-        if (!templateId.equals("N/A")) {
-            System.out.println("      ID       : " + templateId);
+        if (input.equalsIgnoreCase("y") || input.equalsIgnoreCase("yes") || input.equalsIgnoreCase("oui")) {
+            System.out.println("Sauvegarde en cours...");
+            int count = 0;
+            
+            for (NucleiResult v : findings) {
+                try {
+                    String vulnName = (v.info != null && v.info.name != null) ? v.info.name : v.templateId;
+                    String jsonContent = gson.toJson(v);
+                    
+                    // Appel simple via le service passé en paramètre
+                    dbService.saveVulnerability(vulnName, v.matchedAt, "OPEN", jsonContent);
+                    count++;
+                } catch (Exception e) {
+                    System.out.println(RED + "[!] Erreur sauvegarde item: " + e.getMessage() + RESET);
+                }
+            }
+            System.out.println(GREEN + "[+] " + count + " vulnérabilités sauvegardées." + RESET);
+        } else {
+            System.out.println("[-] Sauvegarde annulée.");
         }
-        
-        // La description est parfois longue, on la coupe si besoin ou on l'affiche telle quelle
-        if (!description.equals("N/A") && description.length() > 100) {
-             System.out.println("      Info     : " + description.substring(0, 97) + "...");
-        } else if (!description.equals("N/A")) {
-             System.out.println("      Info     : " + description);
-        }
-        System.out.println("");
+        // Ne surtout pas close scanner car sinon sa fait crash JLine...
     }
 
-    /**
-     * Utilitaire Regex pour extraire une valeur d'une clé JSON simple.
-     * Fonctionne pour les structures "key": "value" ou "key":"value".
-     */
-    private String extractJsonValue(String json, String key) {
-        // Pattern: cherche "key" suivi de : suivi de "valeur"
-        // Attention: Ce regex est simplifié et ne gère pas les objets imbriqués complexes,
-        // mais suffit pour la structure plate des logs Nuclei.
-        Pattern pattern = Pattern.compile("\"" + key + "\"\\s*:\\s*\"(.*?)\"");
-        Matcher matcher = pattern.matcher(json);
-        if (matcher.find()) {
-            return matcher.group(1);
+    private void printSummaryTable(List<NucleiResult> findings) {
+        System.out.println("\n=== SYNTHÈSE DU SCAN ===");
+        String format = "| %-10s | %-40s | %-25s | %-30s |%n";
+        printSeparator();
+        System.out.format(format, "SÉVÉRITÉ", "NOM", "TEMPLATE ID", "ENDPOINT");
+        printSeparator();
+
+        for (NucleiResult v : findings) {
+            String sev = (v.info != null && v.info.severity != null) ? v.info.severity : "unknown";
+            String rawName = (v.info != null && v.info.name != null) ? v.info.name : "N/A";
+            String rawId = (v.templateId != null) ? v.templateId : "N/A";
+            String rawUrl = (v.matchedAt != null) ? v.matchedAt : "N/A";
+
+            String sevDisplay = getSeverityColor(sev) + sev.toUpperCase() + RESET;
+            
+            System.out.format("| %-10s | %-40s | %-25s | %-30s |%n", 
+                sevDisplay + getPadding(sev, 10),
+                truncate(rawName, 38), truncate(rawId, 23), truncate(rawUrl, 28));
         }
-        return "N/A";
+        printSeparator();
+        System.out.println("Total : " + findings.size() + " vulnérabilités.\n");
+    }
+
+    private void printSeparator() { System.out.println("+------------+------------------------------------------+---------------------------+--------------------------------+"); }
+    
+    // DRY
+    private String getSeverityColor(String severity) {
+        String s = severity.toUpperCase();
+        if (s.contains("CRITICAL") || s.contains("HIGH")) return RED + BOLD;
+        if (s.contains("MEDIUM")) return YELLOW;
+        if (s.contains("LOW")) return BLUE;
+        return CYAN;
+    }
+    
+    private String getPadding(String str, int expectedWidth) {
+        if (str == null) {
+            return " ".repeat(expectedWidth);
+        }
+        int padding = expectedWidth - str.length();
+        return " ".repeat(Math.max(0, padding));
+    }
+
+    private String truncate(String str, int width) {
+        if (str.length() > width) {
+            return str.substring(0, width - 3) + "...";
+        }
+        return str;
     }
 }
