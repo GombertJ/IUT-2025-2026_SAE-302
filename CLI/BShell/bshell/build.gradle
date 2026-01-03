@@ -31,7 +31,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'bshell.bshell'
+    mainClass = 'bshell.BShell'
 }
 
 sourceSets.main.resources {
