@@ -67,7 +67,7 @@ public class NucleiModule extends AbstractModule {
             nucleiCmd.append(" -c ").append(threads);
             nucleiCmd.append(" -rl ").append(rateLimit);
             nucleiCmd.append(" -timeout 2");
-            nucleiCmd.append(" -ni -nm -duc -j"); 
+            nucleiCmd.append(" -ni -nm -j"); 
             
             if (!args.isEmpty()) nucleiCmd.append(" ").append(args.replace("-o ", ""));
 
