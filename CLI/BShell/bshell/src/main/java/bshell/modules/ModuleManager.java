@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentMap;
 
 public class ModuleManager {
 
-    // Thread-safe map pour stocker les modules
     private final ConcurrentMap<String, Module> modules = new ConcurrentHashMap<>();
 
     public ModuleManager() {

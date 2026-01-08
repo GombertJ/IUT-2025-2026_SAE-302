@@ -1,7 +1,6 @@
 package bshell.database;
 
 import bshell.configs.ConfigManager;
-import java.util.List;
 
 public class DatabaseService {
 
@@ -22,11 +21,7 @@ public class DatabaseService {
     }
     
     public void saveVulnerability(String name, String target, String state, String infos) {
-        if (repo == null) return; 
+        if (repo == null) return;
         repo.insertVulnerability(new Vulnerability(name, target, state, infos));
-    }
-
-    public List<Vulnerability> query(String host) {
-        return repo.find(host);
     }
 }

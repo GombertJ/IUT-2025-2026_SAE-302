@@ -1,9 +1,6 @@
 package bshell.database;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class SQLiteRepository implements DatabaseRepository {
 
@@ -12,7 +9,6 @@ public class SQLiteRepository implements DatabaseRepository {
 
     public SQLiteRepository(String dbPath) {
         this.dbPath = dbPath;
-        // On se connecte dès l'instanciation ou via la méthode connect()
         connect(); 
         initTables();
     }
@@ -62,35 +58,5 @@ public class SQLiteRepository implements DatabaseRepository {
         } catch (SQLException e) {
             System.err.println("[DB] Erreur insert: " + e.getMessage());
         }
-    }
-
-    @Override
-    public List<Vulnerability> find(String target) {
-        List<Vulnerability> list = new ArrayList<>();
-        String sql = "SELECT id, name, target, state, infos FROM cves WHERE target LIKE ?";
-
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, "%" + target + "%"); // Recherche "contient"
-            
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    list.add(new Vulnerability(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("target"),
-                        rs.getString("state"),
-                        rs.getString("infos")
-                    ));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("[DB] Erreur find: " + e.getMessage());
-        }
-        return list;
-    }
-
-    @Override
-    public void insertScan(String scanId, Map<String, Object> payload) {
-        System.out.println("[DB] TODO: Implement insertScan");
     }
 }

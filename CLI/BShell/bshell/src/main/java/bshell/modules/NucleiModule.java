@@ -39,7 +39,7 @@ public class NucleiModule extends AbstractModule {
 
     public NucleiModule() {
         super("nuclei", "Scanner de vulnérabilités Web");
-        registerOption("TARGET", "http://127.0.0.1", "URL cible", true);
+        registerOption("RHOST", "http://127.0.0.1", "URL cible", true);
         registerOption("THREADS", "150", "Concurrence", false);
         registerOption("RATE_LIMIT", "2000", "Requêtes/sec", false);
         registerOption("ARGS", "", "Arguments extra", false);
@@ -47,7 +47,7 @@ public class NucleiModule extends AbstractModule {
 
     @Override
     public void run() throws ModuleExecutionException {
-        String target = getOption("TARGET").orElseThrow(() -> new ModuleExecutionException("TARGET non défini !"));
+        String target = getOption("RHOST").orElseThrow(() -> new ModuleExecutionException("TARGET non défini !"));
         String threads = getOption("THREADS").orElse("150");
         String rateLimit = getOption("RATE_LIMIT").orElse("2000");
         String args = getOption("ARGS").orElse("");
@@ -84,6 +84,7 @@ public class NucleiModule extends AbstractModule {
             Solution : script permet de simuler un terminal TTY et donc éviter les optimisation linux
             
             */
+           // @TODO: Voir si possible de simplifier et enlever cette accumulation ";"
             ProcessBuilder pb;
             if (System.getProperty("os.name").toLowerCase().contains("linux")) {
                 List<String> wrapper = new ArrayList<>();
