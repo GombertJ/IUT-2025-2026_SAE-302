@@ -26,6 +26,7 @@ public class ShellService {
     private Module currentModule = null; // Le module actuellement sélectionné, important pour savoir le contexte
     private final ConfigManager configManager = ConfigManager.getInstance();
     private final Config config = configManager.getConfig();
+    
     // Couleurs ANSI
     public static final String RESET = "\u001B[0m";
     public static final String RED = "\u001B[31m";
@@ -48,6 +49,9 @@ public class ShellService {
         "Si ce shell plante, c'est une fonctionnalité non documentée, pas un bug."    
     };
 
+    /*
+    Constructeur
+    */
     public ShellService() {
         this.moduleManager = new ModuleManager(); // Charge les modules
         try {
@@ -59,6 +63,9 @@ public class ShellService {
         }
     }
 
+    /*
+    Méthode : C'est la boucle infinie 
+    */
     public void start() {
         printRandomBanner();
         printVersionInfo();
@@ -86,6 +93,9 @@ public class ShellService {
         }
     }
 
+    /*
+    Méthode : afficher le prompt
+    */
     private String getPrompt() {
         if (currentModule == null) {
             return BOLD + "bshell > " + RESET;
@@ -94,6 +104,9 @@ public class ShellService {
         }
     }
 
+    /*
+    Méthode : Gérer les commandes
+    */
     private void handleUserInput(String line) {
         if (line == null || line.trim().isEmpty()) return;
 
@@ -186,7 +199,7 @@ public class ShellService {
                 if (currentModule != null) {
                     System.out.println(currentModule.info());
                 } else {
-                    System.out.println("Bowser Shell v0.1 - Java Pentesting Framework");
+                    System.out.println("Bowser Shell v" + config.version + " - Java Pentesting Framework");
                 }
                 break;
 
@@ -195,8 +208,9 @@ public class ShellService {
         }
     }
 
-    // --- Affichage et Utilitaires ---
-
+    /*
+    Méthode : Afficher l'aide
+    */
     private void printHelp() {
         if (currentModule == null){
             System.out.println("\nCommandes Core\n==============");
@@ -215,6 +229,9 @@ public class ShellService {
         System.out.println();
     }
 
+    /*
+    Méthode : Afficher l'aide
+    */
     private void listModules() {
         System.out.println("\nModules disponibles\n===================");
         for (Module m : moduleManager.list()) {
@@ -223,8 +240,10 @@ public class ShellService {
         System.out.println();
     }
 
+    /*
+    C'est les méthodes fun exécuté par la méthode start
+    */
     private void printVersionInfo() {
-        // Compte dynamique pour faire pro
         long count = moduleManager.list().size();
         System.out.println("\n       =[ " + YELLOW + "bowser-shell " + config.version + "-dev" + RESET + " ]");
         System.out.println("+ -- --=[ " + GREEN + count + " modules loaded" + RESET + " ]");

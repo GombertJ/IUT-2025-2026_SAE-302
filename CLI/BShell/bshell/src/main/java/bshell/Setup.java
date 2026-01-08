@@ -12,9 +12,9 @@ import java.util.Map;
 
 public class Setup {
     
-    String STAR = "[\u2736] ";
-    String TAB = "   ";
-    
+    // On initialise ce qui ne change pas, d'où final
+    final String STAR = "[\u2736] ";
+    final String TAB = "   ";
     private final ConfigManager configManager;
     private final Config config;
 
@@ -28,16 +28,16 @@ public class Setup {
 
         // Ordre des étapes est importantes !
         createWorkingDirectory(config.workspacePath);
-        
         extractDefaultAsciiArt();
-
-        // Installer les outils
         checkAndInstallDependencies();
 
         System.out.println(STAR + "Setup complete.");
         System.out.println();
     }
 
+    /*
+    Méthode : Permet de mettre en place l'environnement de travail.
+    */
     private void createWorkingDirectory(String path) {
         File data = new File(path);
         File ascii = new File(data, "ascii");
@@ -60,15 +60,16 @@ public class Setup {
             System.out.println("Error creating working directories: " + e.getMessage());
         }
     }
-
+    
+    /*
+    Méthode : Permet d'extraire les ressources Ascii dans le bon dossier
+    */
     private void extractDefaultAsciiArt() {
         System.out.println(STAR + "Extracting default resources...");
 
         String[] defaultFiles = {
             "Bowser.txt", 
-            "maskass.txt", 
-            "rammus.txt",
-            "creeper.txt"
+            "matrix.txt"
         };
         
         File asciiDir = new File(config.workspacePath, "ascii");
@@ -80,6 +81,9 @@ public class Setup {
         }
     }
 
+    /*
+    Méthode : Permet d'extraire dans le JAR des ressources.
+    */
     private void copyResourceToDisk(String resourcePath, String destinationPath) {
         File targetFile = new File(destinationPath);
 
@@ -97,13 +101,17 @@ public class Setup {
         }
     }
     
+    /*
+    Méthode : Permet de vérifier l'installation des fichiers binaires, des compilers et programmes.
+    */
     private void checkAndInstallDependencies() {
-        // Utilisation du constructeur sécurisé
+
         File binDir = new File(config.workspacePath, "bin");
+        File localNucleiBinary = new File(binDir, "nuclei");
         
         System.out.println(STAR + "Checking dependencies in " + binDir.getAbsolutePath() + " ...");
 
-        // OLANG PORTABLE (Le reste de la méthode ne change pas, car elle utilise binDir)
+        // Golang PORTABLE 
         File localGoBinary = new File(binDir, "go/bin/go");
 
         if (localGoBinary.exists() && localGoBinary.canExecute()) {
@@ -113,10 +121,8 @@ public class Setup {
             System.out.println(TAB + "[-] Portable Go not found. Installing...");
             installGo(binDir);
         }
-
-        // ... (Le reste du code pour Nuclei reste identique) ...
-        File localNucleiBinary = new File(binDir, "nuclei");
         
+        // Nuclei PORTABLE 
         if (localNucleiBinary.exists() && localNucleiBinary.canExecute()) {
              System.out.println(TAB + STAR + "Portable Nuclei is ready.");
              configManager.setBinaryPath("nuclei", localNucleiBinary.getAbsolutePath());
@@ -130,9 +136,12 @@ public class Setup {
         }
     }
 
+    /*
+    Méthode : Permet d'installer go selon la documentation https://go.dev/doc/install
+    */
     private void installGo(File binDir) {
         String os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-        String goVersion = "go1.23.4.linux-amd64.tar.gz"; 
+        final String goVersion = "go1.23.4.linux-amd64.tar.gz"; 
         String downloadUrl = "https://go.dev/dl/" + goVersion;
         
         try {
@@ -157,7 +166,7 @@ public class Setup {
 
                 System.out.println(TAB + STAR + "Extracting Go...");
                 
-                // Extract directement dans data/bin
+                // Extract directement dans le bin.
                 ProcessBuilder pbExtract = new ProcessBuilder("tar", "-C", binDir.getAbsolutePath(), "-xzf", "/tmp/" + goVersion);
                 if (pbExtract.start().waitFor() != 0) {
                     System.out.println(TAB + "[!] Extraction failed.");
@@ -184,6 +193,9 @@ public class Setup {
         }
     }
 
+    /*
+    Méthode : Permet d'installer nuclei grâce à go
+    */
     private void installNuclei(String goCommand, File binDir) {
         try {
             System.out.println(TAB + STAR + "Compiling Nuclei from source (using portable Go)...");
@@ -196,10 +208,10 @@ public class Setup {
             // On crée une sorte de sandbox, on dit a go où aller chercher ses binaires car sinon il utilise l'installation par défaut
             Map<String, String> env = pb.environment();
             
+            // On spécifie les PATH pour notre environnement, pour qu'il trouve les SDK (software development kit)
             env.put("GOROOT", goDir.getAbsolutePath());
             env.put("GOBIN", binDir.getAbsolutePath());
             env.put("PATH", new File(goDir, "bin").getAbsolutePath() + File.pathSeparator + env.get("PATH"));
-            // ------------------------------------
 
             pb.redirectError(ProcessBuilder.Redirect.INHERIT); 
             pb.redirectOutput(ProcessBuilder.Redirect.DISCARD); 
@@ -223,7 +235,11 @@ public class Setup {
         }
     }
     
-    // Pour éviter des mauvaises surprises.
+    
+    /*
+    Méthode : Grâce à la récursivité on supprime proprement les fichiers dans le dossier
+    */
+   // Pour éviter des mauvaises surprises.
     private void deleteDirectory(File file) {
         File[] contents = file.listFiles();
         

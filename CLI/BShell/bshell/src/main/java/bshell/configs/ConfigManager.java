@@ -9,22 +9,22 @@ import java.io.IOException;
 
 public class ConfigManager {
 
-    // On instance les classes
     private static ConfigManager instance;
     private Config config;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    // Constructeur privé car on fait un singleton
-    private ConfigManager() {
-        load();
-    }
-
     // Singleton
     public static synchronized ConfigManager getInstance() {
+        
+        // Si la classe n'a jamais été appelé alors elle est forcement nul, on crée une seul instance.
         if (instance == null) {
             instance = new ConfigManager();
         }
         return instance;
+    }
+
+    private ConfigManager() {
+        load();
     }
 
     // De cette façons on permet d'accéder à la classe configs
@@ -32,6 +32,9 @@ public class ConfigManager {
         return config;
     }
 
+    /*
+    Méthode : on récupére le fichier de configs, si il existe pas on le crée sinon on update
+    */
     private File getConfigFile() {
         Config currentConfig;
         
@@ -44,6 +47,9 @@ public class ConfigManager {
         return new File(currentConfig.workspacePath, "config.json");
     }
 
+    /*
+    Méthode : on récupére la configs.
+    */
     public void load() {
         File configFile = getConfigFile();
 
@@ -60,6 +66,9 @@ public class ConfigManager {
         }
     }
 
+    /*
+    Méthode : on sauvegarde la configs
+    */
     public void save() {
         File configFile = getConfigFile();
 
@@ -78,10 +87,16 @@ public class ConfigManager {
         }
     }
     
+    /*
+    Méthode : on récupére le chemin d'accès d'un outil
+    */
     public String getBinaryPath(String toolName) {
         return config.binaries.getOrDefault(toolName, toolName);
     }
     
+    /*
+    Méthode : on définit le chemin d'accès d'un outil
+    */
     public void setBinaryPath(String toolName, String path) {
         config.binaries.put(toolName, path);
         save();
