@@ -136,25 +136,25 @@ def list_cves_paged(q: Optional[str]=None, target: Optional[str]=None, state: Op
 
 def count_db_cve_by_ip(target):
     with _get_conn() as conn:
-        if target == "cvss":
+        if target == "severity":
             rows = conn.execute("SELECT infos FROM cve").fetchall()
 
             # Dictionnaire pour compter les occurrences par cvss
-            cvss_counts = defaultdict(int)
+            severity_counts = defaultdict(int)
 
             for row in rows:
                 infos_json = row['infos']
                 try:
                     infos = json.loads(infos_json)
-                    cvss_value = infos.get('cvss', None)
-                    if cvss_value is not None:
-                        cvss_counts[cvss_value] += 1
+                    severity_value = infos.get('severity', None)
+                    if severity_value is not None:
+                        severity_counts[severity_value] += 1
                 except json.JSONDecodeError:
                     # Gérer les erreurs de JSON si nécessaire
                     continue
 
             # Convertir en liste de dicts et trier par cvss numérique
-            data = [{"cvss": cvss, "COUNT": count} for cvss, count in cvss_counts.items()]
+            data = [{"cvss": cvss, "COUNT": count} for cvss, count in severity_counts.items()]
             data = sorted(data, key=lambda x: float(x["cvss"]))
         else:
             query = f"SELECT {target}, COUNT(*) AS COUNT FROM cve GROUP BY {target}"
