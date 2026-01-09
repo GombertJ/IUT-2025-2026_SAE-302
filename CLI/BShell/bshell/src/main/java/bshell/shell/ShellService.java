@@ -114,7 +114,6 @@ public class ShellService {
         String command = parts[0].toLowerCase();
 
         switch (command) {
-            // --- Commandes utilitaires ---
             case "exit":
             case "quit":
                 if (currentModule != null) {
@@ -146,7 +145,6 @@ public class ShellService {
                 }
                 break;
 
-            // --- Gestion des Modules ---
             case "use":
                 if (parts.length < 2) {
                     System.out.println(RED + "[-] Usage: use <module_name>" + RESET);
@@ -162,7 +160,6 @@ public class ShellService {
                 break;
 
 
-            // --- Commandes contextuelles (Uniquement si un module est chargé) ---
             case "set":
                 if (currentModule == null) {
                     System.out.println(RED + "[-] Aucun module chargé. Utilisez 'use <module>'." + RESET);

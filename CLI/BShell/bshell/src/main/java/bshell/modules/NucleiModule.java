@@ -37,24 +37,25 @@ public class NucleiModule extends AbstractModule {
     private static final String GREY = "\u001B[90m";
     private static final String BOLD = "\u001B[1m";
 
+    // Constructeur
     public NucleiModule() {
         super("nuclei", "Scanner de vulnérabilités Web");
-        registerOption("RHOST", "http://127.0.0.1", "URL cible", true);
+
+        // Comme NucleiModule hérite de AbstractModule alors il a accès au protected registerOption
+        registerOption("RHOST", "http://127.0.0.1", "URL web", true);
         registerOption("THREADS", "150", "Concurrence", false);
         registerOption("RATE_LIMIT", "2000", "Requêtes/sec", false);
-        registerOption("ARGS", "", "Arguments extra", false);
     }
 
     @Override
     public void run() throws ModuleExecutionException {
-        String target = getOption("RHOST").orElseThrow(() -> new ModuleExecutionException("TARGET non défini !"));
+        String target = getOption("RHOST").orElseThrow(() -> new ModuleExecutionException("TARGET non défini !")); // Ici on utilise le premier constructeur car msg simple
         String threads = getOption("THREADS").orElse("150");
         String rateLimit = getOption("RATE_LIMIT").orElse("2000");
-        String args = getOption("ARGS").orElse("");
 
         System.out.println("[*] Démarrage de Nuclei sur " + target);
 
-        // Singleton
+        // Singleton, on n'appelle pas le constructeur mais la méthode qui initie le constructeur
         DatabaseService dbService = DatabaseService.getInstance();
 
         List<NucleiResult> findings = new ArrayList<>();
@@ -67,10 +68,8 @@ public class NucleiModule extends AbstractModule {
             nucleiCmd.append(" -c ").append(threads);
             nucleiCmd.append(" -rl ").append(rateLimit);
             nucleiCmd.append(" -timeout 2");
-            nucleiCmd.append(" -ni -nm -j"); 
+            nucleiCmd.append(" -ni -nm -j"); // des params pour opti et output json
             
-            if (!args.isEmpty()) nucleiCmd.append(" ").append(args.replace("-o ", ""));
-
             /*
             Source : https://jvns.ca/blog/2024/11/29/why-pipes-get-stuck-buffering/
 
@@ -84,51 +83,68 @@ public class NucleiModule extends AbstractModule {
             Solution : script permet de simuler un terminal TTY et donc éviter les optimisation linux
             
             */
-           // @TODO: Voir si possible de simplifier et enlever cette accumulation ";"
             ProcessBuilder pb;
             if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+
                 List<String> wrapper = new ArrayList<>();
-                wrapper.add("script"); wrapper.add("-q"); wrapper.add("-c");
-                wrapper.add(nucleiCmd.toString()); wrapper.add("/dev/null");
+                
+                wrapper.add("script");
+                wrapper.add("-q"); 
+                wrapper.add("-c");
+                wrapper.add(nucleiCmd.toString()); 
+                wrapper.add("/dev/null");
+
                 pb = new ProcessBuilder(wrapper);
-            } else {
-                List<String> winCmd = new ArrayList<>();
-                winCmd.add("cmd.exe"); winCmd.add("/c"); winCmd.add(nucleiCmd.toString());
-                pb = new ProcessBuilder(winCmd);
-            }
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                process.getOutputStream().close();
 
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            process.getOutputStream().close();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String cleanLine = line.replaceAll("\u001B\\[[;\\d]*m", "").trim();
+                try(reader) {
 
-                    // Si la ligne commence avec "{" c'est du json.
-                    if (cleanLine.startsWith("{")) {
-                        try {
-                            NucleiResult record = gson.fromJson(cleanLine, NucleiResult.class);
-                            findings.add(record); 
-                        } catch (Exception e) {
-                            System.out.println(GREY + "   [ERR JSON] " + e.getMessage() + RESET);
+                    String line;
+
+                    // On commence le parsing des logs et json
+                    while ((line = reader.readLine()) != null) {
+                        /* Explication de regex dans le replaceAll
+                        Dans les terminales, on peut mettre de la couleur ANSI comme je fais.
+                        Nuclei ne fait pas exception et du coup par précausition on les enlève.
+
+                        Fonctionnement :
+                        - Chaque couleur ANSI commence par "\u001B"
+                        - Ensuite [ est considéré comme un caractère spéciale regex du coup on l'échappe avec \\
+                        - [;\\d]* : \d -> chiffre et le * c'est autant de fois
+                        - m C'est toujours la lettre de fin pour une couleur ANSI
+
+                        */
+                        String cleanLine = line.replaceAll("\u001B\\[[;\\d]*m", "").trim();
+
+                        // Si la ligne commence avec "{" c'est du json.
+                        if (cleanLine.startsWith("{")) {
+                            try {
+                                NucleiResult record = gson.fromJson(cleanLine, NucleiResult.class);
+                                findings.add(record); 
+                            } catch (Exception e) {
+                                System.out.println(GREY + "   [ERR JSON] " + e.getMessage() + RESET);
+                            }
+                        } 
+                        // Debug
+                        else if (!cleanLine.isEmpty()) {
+                            System.out.println(GREY + "   [LOG] " + cleanLine + RESET);
                         }
-                    } 
-                    // Debug
-                    else if (!cleanLine.isEmpty()) {
-                        System.out.println(GREY + "   [LOG] " + cleanLine + RESET);
+                    }
+                    process.waitFor();
+                
+                    if (!findings.isEmpty()) {
+                        printSummaryTable(findings);
+                        askToSave(findings, dbService);
+                    } else {
+                        System.out.println("\n" + GREEN + "[-] Scan terminé. Aucune vulnérabilité trouvée." + RESET);
                     }
                 }
-            }
-
-            process.waitFor();
-            
-            if (!findings.isEmpty()) {
-                printSummaryTable(findings);
-                askToSave(findings, dbService);
             } else {
-                System.out.println("\n" + GREEN + "[-] Scan terminé. Aucune vulnérabilité trouvée." + RESET);
+                new ModuleExecutionException("OS non compatible, veuillez utiliser Linux !");
             }
 
         } catch (Exception e) {

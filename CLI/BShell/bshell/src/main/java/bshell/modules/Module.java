@@ -7,18 +7,13 @@ import java.util.Optional;
 public interface Module {
 
     String getName();
-
     String getDescription();
-
+    String info();
+    
     Map<String, Option> getOptions();
-
-    void setOption(String key, String value) throws IllegalArgumentException;
-
     Optional<String> getOption(String key);
 
     void run() throws ModuleExecutionException;
-
-    String info();
-
+    void setOption(String key, String value) throws IllegalArgumentException;
     void showOptions(PrintStream out);
 }

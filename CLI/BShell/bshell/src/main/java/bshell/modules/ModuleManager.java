@@ -9,6 +9,7 @@ public class ModuleManager {
 
     private final ConcurrentMap<String, Module> modules = new ConcurrentHashMap<>();
 
+    // Constructeur
     public ModuleManager() {
         // Enregistrement automatique des modules disponibles au démarrage
         try {
@@ -18,6 +19,9 @@ public class ModuleManager {
         }
     }
 
+    /*
+    Méthode : Elle permet de rajouter le module si il n'existe pas déjà
+    */
     public void register(Module m) {
         if (modules.containsKey(m.getName().toLowerCase())) {
             throw new IllegalArgumentException("Module déjà enregistré : " + m.getName());

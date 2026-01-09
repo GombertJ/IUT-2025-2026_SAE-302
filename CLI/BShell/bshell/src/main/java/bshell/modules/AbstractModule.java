@@ -26,10 +26,17 @@ public abstract class AbstractModule implements Module {
         this.description = description;
     }
 
+    /*
+    Méthode : permet d'enregistrer l'option dans le module
+    PS : protected rends cette méthode accessible aux classes qui héritent de elle
+    mais n'est pas accessible aux autres classes logique ! Une sorte de private/public
+    */
     protected void registerOption(String name, String defaultValue, String description, boolean required) {
         this.options.put(name.toUpperCase(), new Option(name.toUpperCase(), defaultValue, description, required));
     }
 
+    // Getter & Setter
+    // Rappel : override permet de "surécrire" notre fonction définit par l'interface Module
     @Override
     public String getName() {
         return name;
@@ -75,7 +82,7 @@ public abstract class AbstractModule implements Module {
             String val = opt.getValue().orElse("");
             out.printf(format, 
                 opt.getName(), 
-                opt.isRequired() ? "yes" : "no", 
+                opt.isRequired() ? "yes" : "no", // True alors yes sinon no
                 val, 
                 opt.getDescription()
             );

@@ -10,37 +10,57 @@ public class Option {
     private final String description;
     private final boolean required;
 
-    // Correspond au constructeur UML [cite: 199]
+    // Constructeur de l'option
     public Option(String name, String defaultValue, String description, boolean required) {
         this.name = name;
         this.defaultValue = defaultValue;
         this.description = description;
         this.required = required;
-        this.value = defaultValue; // Par défaut, la valeur est la valeur par défaut
+        this.value = defaultValue;
     }
 
-    public String getName() {
-        return name;
-    }
-
+    // Getter & Setter
     public Optional<String> getValue() {
-        return Optional.ofNullable(value != null && !value.isEmpty() ? value : defaultValue);
-    }
+        String effectiveValue;
 
-    public void setValue(String value) {
-        this.value = value;
+        if (value != null && !value.isEmpty()) {
+            effectiveValue = value;       // L'utilisateur a défini quelque chose
+        } else {
+            effectiveValue = defaultValue; // Sinon, on prend la valeur par défaut
+        }
+
+        // ofNullable gère le cas où effectiveValue serait null et donc évite de faire planter le programme
+        return Optional.ofNullable(effectiveValue);
     }
 
     public String getDescription() {
         return description;
     }
 
-    public boolean isRequired() {
-        return required;
+    public String getName() {
+        return name;
     }
 
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    /*
+    Méthode : Permettant de savoir si l'option contient une valeur utilisable
+    */
     public boolean isSet() {
-        // Une option est "set" si elle a une valeur ou une valeur par défaut
-        return (value != null && !value.isEmpty()) || (defaultValue != null && !defaultValue.isEmpty());
+        if (value != null && !value.isEmpty()) {
+            return true;
+        }
+        
+        if (defaultValue != null && !defaultValue.isEmpty()) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    public boolean isRequired() {
+        return required;
     }
 }
