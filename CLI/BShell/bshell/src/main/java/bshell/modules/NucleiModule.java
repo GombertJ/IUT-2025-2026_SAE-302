@@ -130,7 +130,7 @@ public class NucleiModule extends AbstractModule {
                     }
                     process.waitFor();
                 
-                    // On lance la synchro (Diff) même si findings est vide pour fermer les vulnérabilités disparues
+                    // on lance la synchro (Diff) même si findings est vide pour fermer les vulnérabilités disparues
                     syncVulnerabilities(target, findings, dbService);
                 }
             } else {
@@ -154,6 +154,7 @@ public class NucleiModule extends AbstractModule {
         System.out.println("+----------+------------+------------------------------------------+---------------------------+");
 
         // Gérer les différentes situations (existante, nouvelle et ancienne)
+        // && : ET/AND
         for (NucleiResult finding : currentFindings) {
             String name = (finding.info != null && finding.info.name != null) ? finding.info.name : finding.templateId;
             String sev = (finding.info != null && finding.info.severity != null) ? finding.info.severity : "n/a";
@@ -168,15 +169,15 @@ public class NucleiModule extends AbstractModule {
                 // Cas : nouveau
                 try {
                     String json = gson.toJson(finding);
-                    dbService.saveVulnerability(name, url, "OPEN", json);
+                    dbService.saveVulnerability(name, url, "open", json);
                     printDiffRow("NEW", sev, name, url, GREEN);
                 } catch (Exception e) {
                     System.out.println(RED + "[ERR] Save failed: " + name + RESET);
                 }
             } else {
-                if ("CLOSED".equals(existing.getState())) {
+                if ("closed".equals(existing.getState())) {
                     // Cas : Close -> Open
-                    dbService.updateState(existing.getId(), "OPEN");
+                    dbService.updateState(existing.getId(), "open");
                     printDiffRow("REOPEN", sev, name, url, YELLOW);
                 } else {
                     // Cas : inchangé
@@ -187,7 +188,7 @@ public class NucleiModule extends AbstractModule {
 
         // Gestion des anciennes CVE
         for (Vulnerability v : knownVulns) {
-            if (!"OPEN".equals(v.getState())) continue;
+            if (!"open".equals(v.getState())) continue;
 
             String dbKey = v.getName() + "||" + v.getTarget();
 
@@ -198,7 +199,7 @@ public class NucleiModule extends AbstractModule {
                     if (oldRes.info != null) oldSev = oldRes.info.severity;
                 } catch (Exception e) { /* Ignored */ }
 
-                dbService.updateState(v.getId(), "CLOSED");
+                dbService.updateState(v.getId(), "closed");
                 printDiffRow("FIXED", oldSev, v.getName(), v.getTarget(), RED);
             }
         }

@@ -13,6 +13,7 @@ public class DatabaseService {
     private DatabaseService() {
         String dbPath = ConfigManager.getInstance().getConfig().dbPath;
         
+        // SQLiteRepository implémente DatabaseRepository donc le type fonctionne.
         this.repo = new SQLiteRepository(dbPath);
     }
 
@@ -23,6 +24,7 @@ public class DatabaseService {
         return instance;
     }
     
+    // if (repo == null) return; C'est dans le cas où on a initié la classe mais pas le singleton.
     public void saveVulnerability(String name, String target, String state, String infos) {
         if (repo == null) return;
         repo.insertVulnerability(new Vulnerability(name, target, state, infos));

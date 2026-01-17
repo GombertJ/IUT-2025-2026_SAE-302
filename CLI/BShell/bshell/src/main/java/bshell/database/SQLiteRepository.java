@@ -32,12 +32,12 @@ public class SQLiteRepository implements DatabaseRepository {
 
     private void initTables() {
         // Création de la table si elle n'existe pas
-        String sql = "CREATE TABLE IF NOT EXISTS cves (" +
+        String sql = "CREATE TABLE IF NOT EXISTS cve (" +
                      "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                      "name TEXT NOT NULL, " +
-                     "target TEXT, " +
-                     "state TEXT, " +
-                     "infos TEXT" +
+                     "target TEXT NOT NULL, " +
+                     "state TEXT NOT NULL, " +
+                     "infos TEXT NOT NULL" +
                      ");";
         
         try (Statement stmt = conn.createStatement()) {
