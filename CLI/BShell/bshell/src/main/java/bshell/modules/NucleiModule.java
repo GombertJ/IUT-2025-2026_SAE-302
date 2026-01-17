@@ -2,13 +2,13 @@ package bshell.modules;
 
 import bshell.configs.ConfigManager;
 import bshell.database.DatabaseService;
+import bshell.database.Vulnerability;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class NucleiModule extends AbstractModule {
 
@@ -26,14 +26,11 @@ public class NucleiModule extends AbstractModule {
 
     private final Gson gson = new Gson();
     
-    
     // Couleurs ANSI 
     private static final String RESET = "\u001B[0m";
     private static final String RED = "\u001B[31m";
     private static final String GREEN = "\u001B[32m";
     private static final String YELLOW = "\u001B[33m";
-    private static final String BLUE = "\u001B[34m";
-    private static final String CYAN = "\u001B[36m";
     private static final String GREY = "\u001B[90m";
     private static final String BOLD = "\u001B[1m";
 
@@ -81,7 +78,6 @@ public class NucleiModule extends AbstractModule {
             Conséquences : Le résultat est toujours le même mais la performance est grandement impacté...
 
             Solution : script permet de simuler un terminal TTY et donc éviter les optimisation linux
-            
             */
             ProcessBuilder pb;
             if (System.getProperty("os.name").toLowerCase().contains("linux")) {
@@ -102,7 +98,6 @@ public class NucleiModule extends AbstractModule {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
                 try(reader) {
-
                     String line;
 
                     // On commence le parsing des logs et json
@@ -116,7 +111,6 @@ public class NucleiModule extends AbstractModule {
                         - Ensuite [ est considéré comme un caractère spéciale regex du coup on l'échappe avec \\
                         - [;\\d]* : \d -> chiffre et le * c'est autant de fois
                         - m C'est toujours la lettre de fin pour une couleur ANSI
-
                         */
                         String cleanLine = line.replaceAll("\u001B\\[[;\\d]*m", "").trim();
 
@@ -136,12 +130,8 @@ public class NucleiModule extends AbstractModule {
                     }
                     process.waitFor();
                 
-                    if (!findings.isEmpty()) {
-                        printSummaryTable(findings);
-                        askToSave(findings, dbService);
-                    } else {
-                        System.out.println("\n" + GREEN + "[-] Scan terminé. Aucune vulnérabilité trouvée." + RESET);
-                    }
+                    // On lance la synchro (Diff) même si findings est vide pour fermer les vulnérabilités disparues
+                    syncVulnerabilities(target, findings, dbService);
                 }
             } else {
                 new ModuleExecutionException("OS non compatible, veuillez utiliser Linux !");
@@ -152,89 +142,96 @@ public class NucleiModule extends AbstractModule {
         }
     }
 
-    private void askToSave(List<NucleiResult> findings, DatabaseService dbService) {
-        System.out.println(YELLOW + "Voulez-vous sauvegarder ces " + findings.size() + " résultats en base de données ? (y/N)" + RESET);
-        System.out.print("> ");
+    private void syncVulnerabilities(String targetHost, List<NucleiResult> currentFindings, DatabaseService dbService) {
+        System.out.println("\n" + BOLD + "=== SYNCHRONISATION (DIFF) ===" + RESET);
         
-        Scanner scanner = new Scanner(System.in);
-        String input = scanner.nextLine().trim();
+        // Historique
+        List<Vulnerability> knownVulns = dbService.getVulnsForTarget(targetHost);
+        List<String> seenInCurrentScanKeys = new ArrayList<>();
+        
+        System.out.println("+----------+------------+------------------------------------------+---------------------------+");
+        System.out.format("| %-8s | %-10s | %-40s | %-25s |%n", "STATUS", "SEVERITY", "NOM", "ENDPOINT");
+        System.out.println("+----------+------------+------------------------------------------+---------------------------+");
 
-        boolean isYes = input.equalsIgnoreCase("y") || input.equalsIgnoreCase("yes") || input.equalsIgnoreCase("oui");
+        // Gérer les différentes situations (existante, nouvelle et ancienne)
+        for (NucleiResult finding : currentFindings) {
+            String name = (finding.info != null && finding.info.name != null) ? finding.info.name : finding.templateId;
+            String sev = (finding.info != null && finding.info.severity != null) ? finding.info.severity : "n/a";
+            String url = finding.matchedAt;
+            
+            String uniqueKey = name + "||" + url;
+            seenInCurrentScanKeys.add(uniqueKey);
 
-        if (!isYes) {
-            System.out.println("[-] Sauvegarde annulée.");
-            return; 
+            Vulnerability existing = findVulnerability(knownVulns, name, url);
+
+            if (existing == null) {
+                // Cas : nouveau
+                try {
+                    String json = gson.toJson(finding);
+                    dbService.saveVulnerability(name, url, "OPEN", json);
+                    printDiffRow("NEW", sev, name, url, GREEN);
+                } catch (Exception e) {
+                    System.out.println(RED + "[ERR] Save failed: " + name + RESET);
+                }
+            } else {
+                if ("CLOSED".equals(existing.getState())) {
+                    // Cas : Close -> Open
+                    dbService.updateState(existing.getId(), "OPEN");
+                    printDiffRow("REOPEN", sev, name, url, YELLOW);
+                } else {
+                    // Cas : inchangé
+                    printDiffRow("SAME", sev, name, url, GREY);
+                }
+            }
         }
 
-        System.out.println("Sauvegarde en cours...");
-        int count = 0;
-        
-        for (NucleiResult v : findings) {
-            try {
-                String vulnName;
-                
-                if (v.info != null && v.info.name != null) {
-                    vulnName = v.info.name;
-                } else {
-                    vulnName = v.templateId;
-                }
+        // Gestion des anciennes CVE
+        for (Vulnerability v : knownVulns) {
+            if (!"OPEN".equals(v.getState())) continue;
 
-                String jsonContent = gson.toJson(v);
-                
-                dbService.saveVulnerability(vulnName, v.matchedAt, "OPEN", jsonContent);
-                count++;
-                
-            } catch (Exception e) {
-                System.out.println(RED + "[!] Erreur sauvegarde item: " + e.getMessage() + RESET);
+            String dbKey = v.getName() + "||" + v.getTarget();
+
+            if (!seenInCurrentScanKeys.contains(dbKey)) {
+                String oldSev = "unknown";
+                try {
+                    NucleiResult oldRes = gson.fromJson(v.getInfos(), NucleiResult.class);
+                    if (oldRes.info != null) oldSev = oldRes.info.severity;
+                } catch (Exception e) { /* Ignored */ }
+
+                dbService.updateState(v.getId(), "CLOSED");
+                printDiffRow("FIXED", oldSev, v.getName(), v.getTarget(), RED);
             }
         }
         
-        System.out.println(GREEN + "[+] " + count + " vulnérabilités sauvegardées." + RESET);
-        // ne pas close le scanner car sinon jline crashera aussi...
+        System.out.println("+----------+------------+------------------------------------------+---------------------------+");
+        System.out.println(BOLD + "=== SYNC TERMINÉE ===\n" + RESET);
     }
 
-    private void printSummaryTable(List<NucleiResult> findings) {
-        System.out.println("\n=== SYNTHÈSE DU SCAN ===");
-        String format = "| %-10s | %-40s | %-25s | %-30s |%n";
-        printSeparator();
-        System.out.format(format, "SÉVÉRITÉ", "NOM", "TEMPLATE ID", "ENDPOINT");
-        printSeparator();
 
-        for (NucleiResult v : findings) {
-            String sev = (v.info != null && v.info.severity != null) ? v.info.severity : "unknown";
-            String rawName = (v.info != null && v.info.name != null) ? v.info.name : "N/A";
-            String rawId = (v.templateId != null) ? v.templateId : "N/A";
-            String rawUrl = (v.matchedAt != null) ? v.matchedAt : "N/A";
+    private void printDiffRow(String status, String severity, String name, String url, String colorCode) {
+        // On tronque les textes trop longs pour ne pas casser le tableau
+        String tName = truncate(name, 38);
+        String tUrl = truncate(url, 23);
+        
+        // Astuce : On applique la couleur sur toute la ligne, mais on reset à la fin de chaque cellule 
+        // ou à la fin de la ligne pour éviter que la bordure "|" ne prenne la couleur.
+        System.out.format("| %s%-8s%s | %s%-10s%s | %s%-40s%s | %s%-25s%s |%n", 
+            colorCode, status, RESET,
+            colorCode, severity, RESET,
+            colorCode, tName, RESET,
+            colorCode, tUrl, RESET
+        );
+    }
 
-            String sevDisplay = getSeverityColor(sev) + sev.toUpperCase() + RESET;
-            
-            System.out.format("| %-10s | %-40s | %-25s | %-30s |%n", 
-                sevDisplay + getPadding(sev, 10),
-                truncate(rawName, 38), truncate(rawId, 23), truncate(rawUrl, 28));
+    private Vulnerability findVulnerability(List<Vulnerability> list, String name, String target) {
+        for (Vulnerability v : list) {
+            if (v.getName().equals(name) && v.getTarget().equals(target)) {
+                return v;
+            }
         }
-        printSeparator();
-        System.out.println("Total : " + findings.size() + " vulnérabilités.\n");
-    }
-
-    private void printSeparator() { System.out.println("+------------+------------------------------------------+---------------------------+--------------------------------+"); }
-    
-    // DRY
-    private String getSeverityColor(String severity) {
-        String s = severity.toUpperCase();
-        if (s.contains("CRITICAL") || s.contains("HIGH")) return RED + BOLD;
-        if (s.contains("MEDIUM")) return YELLOW;
-        if (s.contains("LOW")) return BLUE;
-        return CYAN;
+        return null;
     }
     
-    private String getPadding(String str, int expectedWidth) {
-        if (str == null) {
-            return " ".repeat(expectedWidth);
-        }
-        int padding = expectedWidth - str.length();
-        return " ".repeat(Math.max(0, padding));
-    }
-
     private String truncate(String str, int width) {
         if (str.length() > width) {
             return str.substring(0, width - 3) + "...";
