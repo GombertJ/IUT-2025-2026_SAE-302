@@ -1,18 +1,51 @@
 import sqlite3, json
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
+from collections import defaultdict
 
 DB_PATH = Path(__file__).with_name("dev.db")
 
 def _dict_factory(cursor, row):
-    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
+    # 1. Obtenir la description des colonnes
+    description = cursor.description
+    # 2. Parcourir chaque colonne avec son index
+    result_dict = {}
+    for idx, col in enumerate(description):
+        # 3. Récupérer le nom de la colonne
+        column_name = col[0]
+        # 4. Récupérer la valeur dans la ligne
+        value = row[idx]
+        # 5. Ajouter au dictionnaire
+        result_dict[column_name] = value
+    # 6. Résultat final
+    return result_dict
 
 def _get_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = _dict_factory
-    conn.execute("PRAGMA foreign_keys=ON;")
-    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA foreign_keys=ON;")    # Active la gestion de clé étrangère
+    conn.execute("PRAGMA journal_mode=WAL;")   # Mode Write-Ahead Logging (Lecture/Ecriture simultané)
     return conn
+
+def _close_conn(conn: sqlite3.Connection):
+    if conn:
+        conn.close()
+
+from faker import Faker
+import random
+import json
+
+fake = Faker()
+
+def generate_row():
+    cve_id = f"CVE-{fake.year()}-{random.randint(1000,9999):04d}"
+    product = fake.word().capitalize()
+    status = random.choice(["open", "closed"])
+    details = {
+        "cvss": round(random.uniform(0, 10), 1),
+        "notes": fake.sentence()
+    }
+    return (cve_id, product, status, details)
 
 def init_db() -> None:
     with _get_conn() as conn:
@@ -26,33 +59,31 @@ def init_db() -> None:
         );
         """)
         # seed si vide
-        n = conn.execute("SELECT COUNT(*) AS n FROM cve;").fetchone()["n"]
+        result = conn.execute("SELECT COUNT(*) AS number FROM cve;").fetchone()
+        n = result["number"]
         if n == 0:
-            rows = [
-                ("CVE-2025-0001", "Android", "open", {"cvss": 7.8, "notes": "demo 1"}),
-                ("CVE-2025-0002", "Linux",   "closed", {"cvss": 5.1, "notes": "demo 2"}),
-                ("CVE-2025-0003", "WebApp",  "open", {"cvss": 9.0, "notes": "demo 3"}),
-            ]
+            rows = [generate_row() for _ in range(1000)]
             conn.executemany(
                 "INSERT INTO cve (name, target, state, infos) VALUES (?, ?, ?, ?);",
                 [(a,b,c,json.dumps(d, ensure_ascii=False)) for (a,b,c,d) in rows]
             )
+            # Insert chaque ligne de rows dans la base en transformant le dico en json non ASCII
+            _close_conn(conn)
 
 def _decode_infos(row: Dict[str, Any]) -> Dict[str, Any]:
-    if row is None: return row
+    if row is None:
+        return row
     try:
         row["infos"] = json.loads(row["infos"]) if isinstance(row.get("infos"), str) else (row.get("infos") or {})
     except Exception:
         row["infos"] = {}
     return row
 
-def list_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None, limit: int=200) -> List[Dict[str, Any]]:
-    sql = "SELECT id, name, target, state, infos FROM cve"
-    params: list[Any] = []
+def _params_clauses(params, sql, q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None):
     clauses = []
     if q:
         clauses.append("(name LIKE ? OR target LIKE ? OR state LIKE ?)")
-        like = f"%{q}%"
+        like = f"%{q}%"       # Pour les LIKE SQL %coucou%, coucou étant q
         params += [like, like, like]
     if target:
         clauses.append("target = ?"); params.append(target)
@@ -60,15 +91,22 @@ def list_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional
         clauses.append("state = ?"); params.append(state)
     if clauses:
         sql += " WHERE " + " AND ".join(clauses)
+    return params, sql
+
+def list_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None, limit: int=200) -> List[Dict[str, Any]]:
+    sql = "SELECT id, name, target, state, infos FROM cve"
+    params, sql = _params_clauses([], sql, q, target, state)
     sql += " ORDER BY id ASC LIMIT ?"
     params.append(min(limit, 1000))
     with _get_conn() as conn:
         rows = conn.execute(sql, params).fetchall()
+        _close_conn(conn)
     return [_decode_infos(r) for r in rows]
 
 def get_cve(cve_id: int) -> Optional[Dict[str, Any]]:
     with _get_conn() as conn:
         row = conn.execute("SELECT id, name, target, state, infos FROM cve WHERE id=?", (cve_id,)).fetchone()
+        _close_conn(conn)
     return _decode_infos(row)
 
 
@@ -83,44 +121,16 @@ _SORT_MAP = {
 }
 
 def count_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None) -> int:
-    sql = "SELECT COUNT(*) AS n FROM cve"
-    params = []
-    clauses = []
-    if q:
-        clauses.append("(name LIKE ? OR target LIKE ? OR state LIKE ?)")
-        like = f"%{q}%"
-        params += [like, like, like]
-    if target:
-        clauses.append("target = ?"); params.append(target)
-    if state:
-        clauses.append("state = ?"); params.append(state)
-    if clauses:
-        sql += " WHERE " + " AND ".join(clauses)
+    sql = "SELECT COUNT(*) AS number FROM cve"
+    params, sql = _params_clauses([], sql, q, target, state)
     with _get_conn() as conn:
-        return conn.execute(sql, params).fetchone()["n"]
+        result = conn.execute(sql, params).fetchone()
+        _close_conn(conn)
+        return result["number"]
 
-def list_cves_paged(
-    q: Optional[str]=None,
-    target: Optional[str]=None,
-    state: Optional[str]=None,
-    sort: str="id_asc",
-    page: int=1,
-    page_size: int=25
-) -> List[Dict[str, Any]]:
+def list_cves_paged(q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None, sort: str="id_asc", page: int=1, page_size: int=25) -> List[Dict[str, Any]]:
     sql = "SELECT id, name, target, state, infos FROM cve"
-    params: list[Any] = []
-    clauses = []
-    if q:
-        clauses.append("(name LIKE ? OR target LIKE ? OR state LIKE ?)")
-        like = f"%{q}%"
-        params += [like, like, like]
-    if target:
-        clauses.append("target = ?"); params.append(target)
-    if state:
-        clauses.append("state = ?"); params.append(state)
-    if clauses:
-        sql += " WHERE " + " AND ".join(clauses)
-
+    params, sql = _params_clauses([], sql, q, target, state)
     order_by = _SORT_MAP.get(sort, "id ASC")
     sql += f" ORDER BY {order_by} LIMIT ? OFFSET ?"
     page = max(1, int(page))
@@ -130,4 +140,33 @@ def list_cves_paged(
 
     with _get_conn() as conn:
         rows = conn.execute(sql, params).fetchall()
+        _close_conn(conn)
     return [_decode_infos(r) for r in rows]
+
+def count_db_cve_by_ip(target):
+    with _get_conn() as conn:
+        if target == "severity":
+            rows = conn.execute("SELECT infos FROM cve").fetchall()
+
+            # Dictionnaire pour compter les occurrences par cvss
+            severity_counts = defaultdict(int)
+
+            for row in rows:
+                infos_json = row['infos']
+                try:
+                    infos = json.loads(infos_json)
+                    severity_value = infos.get('severity', None)
+                    if severity_value is not None:
+                        severity_counts[severity_value] += 1
+                except json.JSONDecodeError:
+                    # Gérer les erreurs de JSON si nécessaire
+                    continue
+
+            # Convertir en liste de dicts et trier par cvss numérique
+            data = [{"cvss": cvss, "COUNT": count} for cvss, count in severity_counts.items()]
+            data = sorted(data, key=lambda x: float(x["cvss"]))
+        else:
+            query = f"SELECT {target}, COUNT(*) AS COUNT FROM cve GROUP BY {target}"
+            data = conn.execute(query).fetchall()
+        _close_conn(conn)
+        return data
