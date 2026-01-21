@@ -107,11 +107,13 @@ def list_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional
     params.append(min(limit, 1000))
     with get_connection() as conn:
         rows = conn.execute(sql, params).fetchall()
+        _close_conn(conn)
     return [_decode_infos(r) for r in rows]
 
 def get_cve(cve_id: int) -> Optional[Dict[str, Any]]:
     with get_connection() as conn:
         row = conn.execute("SELECT id, name, target, state, infos FROM cve WHERE id=?", (cve_id,)).fetchone()
+        _close_conn(conn)
     return _decode_infos(row)
 
 
