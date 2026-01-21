@@ -49,7 +49,7 @@ public class SQLiteRepository implements DatabaseRepository {
 
     @Override
     public void insertVulnerability(Vulnerability v) {
-        String sql = "INSERT INTO cves(name, target, state, infos) VALUES(?, ?, ?, ?)";
+        String sql = "INSERT INTO cve(name, target, state, infos) VALUES(?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, v.getName());
@@ -64,7 +64,7 @@ public class SQLiteRepository implements DatabaseRepository {
 
     @Override
     public void updateVulnerabilityState(int id, String newState) {
-        String sql = "UPDATE cves SET state = ? WHERE id = ?";
+        String sql = "UPDATE cve SET state = ? WHERE id = ?";
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, newState);
@@ -78,7 +78,7 @@ public class SQLiteRepository implements DatabaseRepository {
     @Override
     public List<Vulnerability> findByTargetPrefix(String targetPrefix) {
         List<Vulnerability> results = new ArrayList<>();
-        String sql = "SELECT id, name, target, state, infos FROM cves WHERE target LIKE ?";
+        String sql = "SELECT id, name, target, state, infos FROM cve WHERE target LIKE ?";
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, targetPrefix + "%");
