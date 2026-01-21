@@ -18,7 +18,7 @@ from Web_app.database import (
 
 app = FastAPI(title="CVE Manager")
 
-# CORS (comme avant)
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -52,7 +52,7 @@ def home(request: Request):
     Page d’accueil simple : ton layout base.html
     """
     return templates.TemplateResponse(
-        "base.html",
+        "home.html",
         {"request": request},
     )
 
@@ -69,7 +69,6 @@ def failles_page(
     """
     Page HTML qui liste les failles, avec filtres + tri + pagination.
     """
-    # Nettoyage comme dans ton Flask
     if q is not None:
         q = q.strip() or None
     if target is not None:
@@ -112,7 +111,7 @@ def states_page(
     """
     if target:
         target = target.strip()
-        if target not in ["name", "target", "state", "cvss"]:
+        if target not in ["name", "target", "state", "severity"]:
             target = "name"
     else:
         target = "name"
