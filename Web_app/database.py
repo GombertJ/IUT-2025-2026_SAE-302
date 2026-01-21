@@ -27,6 +27,10 @@ def _get_conn() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL;")   # Mode Write-Ahead Logging (Lecture/Ecriture simultané)
     return conn
 
+def _close_conn(conn: sqlite3.Connection):
+    if conn:
+        conn.close()
+
 from faker import Faker
 import random
 import json
@@ -64,6 +68,7 @@ def init_db() -> None:
                 [(a,b,c,json.dumps(d, ensure_ascii=False)) for (a,b,c,d) in rows]
             )
             # Insert chaque ligne de rows dans la base en transformant le dico en json non ASCII
+            _close_conn(conn)
 
 def _decode_infos(row: Dict[str, Any]) -> Dict[str, Any]:
     if row is None:
@@ -95,11 +100,13 @@ def list_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional
     params.append(min(limit, 1000))
     with _get_conn() as conn:
         rows = conn.execute(sql, params).fetchall()
+        _close_conn(conn)
     return [_decode_infos(r) for r in rows]
 
 def get_cve(cve_id: int) -> Optional[Dict[str, Any]]:
     with _get_conn() as conn:
         row = conn.execute("SELECT id, name, target, state, infos FROM cve WHERE id=?", (cve_id,)).fetchone()
+        _close_conn(conn)
     return _decode_infos(row)
 
 
@@ -118,6 +125,7 @@ def count_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optiona
     params, sql = _params_clauses([], sql, q, target, state)
     with _get_conn() as conn:
         result = conn.execute(sql, params).fetchone()
+        _close_conn(conn)
         return result["number"]
 
 def list_cves_paged(q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None, sort: str="id_asc", page: int=1, page_size: int=25) -> List[Dict[str, Any]]:
@@ -132,6 +140,7 @@ def list_cves_paged(q: Optional[str]=None, target: Optional[str]=None, state: Op
 
     with _get_conn() as conn:
         rows = conn.execute(sql, params).fetchall()
+        _close_conn(conn)
     return [_decode_infos(r) for r in rows]
 
 def count_db_cve_by_ip(target):
@@ -159,4 +168,5 @@ def count_db_cve_by_ip(target):
         else:
             query = f"SELECT {target}, COUNT(*) AS COUNT FROM cve GROUP BY {target}"
             data = conn.execute(query).fetchall()
+        _close_conn(conn)
         return data
