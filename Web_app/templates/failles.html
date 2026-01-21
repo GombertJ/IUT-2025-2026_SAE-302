@@ -3,14 +3,16 @@
 <h2>Failles (CVE)</h2>
 
 <form method="get" id="filtersForm" class="controls">
-  <input type="search" name="q" placeholder="Recherche (name/target/state)"
-         value="{{ q }}" oninput="debounceSubmit('q', 300)">
+  <input type="search" 
+        name="q" 
+        placeholder="Recherche (name/target/state)"
+        value="{{ q }}"
+        onkeydown="if(event.key === 'Enter'){ resetAndSend(); }">
 
   <!-- Target exacte : on attend un peu que l'utilisateur finisse -->
   <input type="text" name="target" placeholder="Target exacte"
          value="{{ target }}"
-         oninput="debounceSubmit('target', 1000)"
-         onblur="autoSubmitNow()">
+         onkeydown="if(event.key === 'Enter'){ resetAndSend(); }">
 
   <select name="state" onchange="autoSubmitNow()">
     <option value="" {{ ''==state and 'selected' or '' }}>Tous états</option>
@@ -36,16 +38,13 @@
   <a class="btn" href="{{ request.url_for('failles_page') }}">Réinitialiser</a>
 </form>
 
-<script>
-  const timers = {};
-  function autoSubmitNow() {
-    document.getElementById('filtersForm').submit();
-  }
-  function debounceSubmit(key, delay) {
-    if (timers[key]) clearTimeout(timers[key]);
-    timers[key] = setTimeout(autoSubmitNow, delay);
-  }
-</script>
+  <script>
+    function resetAndSend() {
+      const input = document.querySelector('input[name="q"]');
+      const form = document.getElementById('filtersForm');
+      form.submit();
+    }
+  </script>
 
 <p class="muted">{{ total }} résultat(s)</p>
 
