@@ -2,6 +2,7 @@ import sqlite3, json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from collections import defaultdict
+from contextlib import contextmanager
 
 DB_PATH = Path(__file__).with_name("dev.db")
 
@@ -31,6 +32,14 @@ def _close_conn(conn: sqlite3.Connection):
     if conn:
         conn.close()
 
+@contextmanager
+def get_connection():
+    conn = _get_conn()
+    try:
+        yield conn
+    finally:
+        _close_conn(conn)
+
 from faker import Faker
 import random
 import json
@@ -48,27 +57,25 @@ def generate_row():
     return (cve_id, product, status, details)
 
 def init_db() -> None:
-    with _get_conn() as conn:
+    with get_connection() as conn:
         conn.execute("""
         CREATE TABLE IF NOT EXISTS cve (
             id      INTEGER PRIMARY KEY AUTOINCREMENT,
             name    TEXT NOT NULL,
             target  TEXT NOT NULL,
             state   TEXT NOT NULL,
-            infos   TEXT NOT NULL        -- JSON sérialisé
+            infos   TEXT NOT NULL
         );
         """)
-        # seed si vide
         result = conn.execute("SELECT COUNT(*) AS number FROM cve;").fetchone()
         n = result["number"]
         if n == 0:
             rows = [generate_row() for _ in range(1000)]
             conn.executemany(
                 "INSERT INTO cve (name, target, state, infos) VALUES (?, ?, ?, ?);",
-                [(a,b,c,json.dumps(d, ensure_ascii=False)) for (a,b,c,d) in rows]
+                [(a, b, c, json.dumps(d, ensure_ascii=False)) for (a, b, c, d) in rows]
             )
-            # Insert chaque ligne de rows dans la base en transformant le dico en json non ASCII
-            _close_conn(conn)
+        # Insert chaque ligne de rows dans la base en transformant le dico en json non ASCII
 
 def _decode_infos(row: Dict[str, Any]) -> Dict[str, Any]:
     if row is None:
@@ -98,13 +105,13 @@ def list_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional
     params, sql = _params_clauses([], sql, q, target, state)
     sql += " ORDER BY id ASC LIMIT ?"
     params.append(min(limit, 1000))
-    with _get_conn() as conn:
+    with get_connection() as conn:
         rows = conn.execute(sql, params).fetchall()
         _close_conn(conn)
     return [_decode_infos(r) for r in rows]
 
 def get_cve(cve_id: int) -> Optional[Dict[str, Any]]:
-    with _get_conn() as conn:
+    with get_connection() as conn:
         row = conn.execute("SELECT id, name, target, state, infos FROM cve WHERE id=?", (cve_id,)).fetchone()
         _close_conn(conn)
     return _decode_infos(row)
@@ -123,10 +130,9 @@ _SORT_MAP = {
 def count_cves(q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None) -> int:
     sql = "SELECT COUNT(*) AS number FROM cve"
     params, sql = _params_clauses([], sql, q, target, state)
-    with _get_conn() as conn:
+    with get_connection() as conn:
         result = conn.execute(sql, params).fetchone()
-        _close_conn(conn)
-        return result["number"]
+    return result["number"]
 
 def list_cves_paged(q: Optional[str]=None, target: Optional[str]=None, state: Optional[str]=None, sort: str="id_asc", page: int=1, page_size: int=25) -> List[Dict[str, Any]]:
     sql = "SELECT id, name, target, state, infos FROM cve"
@@ -138,17 +144,15 @@ def list_cves_paged(q: Optional[str]=None, target: Optional[str]=None, state: Op
     offset = (page - 1) * page_size
     params += [page_size, offset]
 
-    with _get_conn() as conn:
+    with get_connection() as conn:
         rows = conn.execute(sql, params).fetchall()
-        _close_conn(conn)
     return [_decode_infos(r) for r in rows]
 
 def count_db_cve_by_ip(target):
-    with _get_conn() as conn:
+    with get_connection() as conn:
         if target == "severity":
             rows = conn.execute("SELECT infos FROM cve").fetchall()
 
-            # Dictionnaire pour compter les occurrences par cvss
             severity_counts = defaultdict(int)
 
             for row in rows:
@@ -159,14 +163,11 @@ def count_db_cve_by_ip(target):
                     if severity_value is not None:
                         severity_counts[severity_value] += 1
                 except json.JSONDecodeError:
-                    # Gérer les erreurs de JSON si nécessaire
                     continue
 
-            # Convertir en liste de dicts et trier par cvss numérique
             data = [{"cvss": cvss, "COUNT": count} for cvss, count in severity_counts.items()]
             data = sorted(data, key=lambda x: float(x["cvss"]))
         else:
             query = f"SELECT {target}, COUNT(*) AS COUNT FROM cve GROUP BY {target}"
             data = conn.execute(query).fetchall()
-        _close_conn(conn)
-        return data
+    return data
