@@ -35,6 +35,7 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
 - ✅ Compatible téléphone / émulateur Android
 - ✅ Lancement simple (application java bshell)
 - ✅ Implémentation d'une détection de différences dans les CVE Web (open/closed) par l'application Java
+- ✅Implémentation d'une gestion d'outils dans l'application Java sous forme de module
 
 ---
 
@@ -318,5 +319,12 @@ Fournir un **tableau de bord local et autonome** des failles CVE Web, utilisable
 - depuis un navigateur web,
 - que depuis une application Android (via API).
 
+Fournir une application Java pour scanner les vulnérabilités Web.
+
+---
+
+## Autres
+
+Dossier visual code : **CLI/BShell/**
 
 ---
