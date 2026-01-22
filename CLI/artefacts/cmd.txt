@@ -1,0 +1,13 @@
+--- uninstall project -----
+rm -rf /opt/bshell
+rm -rf /usr/local/bin/bshell
+----------------------------
+unzip bshell.zip -d /opt/
+chmod 077 /opt/bshell
+chmod +x /opt/bshell/bin/bshell
+ln -s /opt/bshell/bin/bshell /usr/local/bin/bshell
+-- Pour régler problème de dpkg et installer le jdk 21------
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+sudo dpkg -i jdk-21_linux-x64_bin.deb 
+
