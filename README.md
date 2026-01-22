@@ -20,7 +20,7 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
 - [🌍 Utilisation & Installation du Site Web](#-utilisation-du-site-web)
   - [▶️ Lancement](#️-lancement)
   - [🧑‍💻 Accès](#-accès)
-- [🫖 Utilisation de l'application Java](#-utilisation-de-l--application-java)
+- [🫖 Utilisation de l'application Java](#-utilisation-de-lapplication-java)
 - [🗃️ Base de données](#️-base-de-données)
 - [🔌 API — Endpoints principaux](#-api--endpoints-principaux)
 - [🎯 Objectif](#-objectif)
