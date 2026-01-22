@@ -241,21 +241,19 @@ unzip Web.zip -d /opt/bshell/
 
 **Mise en place du venv**:
 ```bash
+cd /opt/bshell/
 python3 -m venv env
+source env/bin/activate
 ```
 
 - Installer les dépendances avec :
 ```bash
-cd /opt/bshell/
-source env/bin/activate
 pip3 install -r requirements.txt
 ```
 
 - Ou, installer manuellement les packages nécessaires, par exemple :
 ```bash
-cd /opt/bshell/
-source env/bin/activate
-pip3 install fastapi flask uvicorn asgiref
+pip3 install fastapi flask uvicorn asgiref faker
 ```
 
 ---
