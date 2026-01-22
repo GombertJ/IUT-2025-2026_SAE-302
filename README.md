@@ -15,7 +15,7 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
   - [🫖🫖 2. Installer Java 21 (jdk)](#-2-installer-java-21-jdk)
   - [🛠️🌐 3. Créer un environnement virtuel](#️-3-créer-un-environnement-virtuel)
   - [🔧📥 4. Cloner le dépôt Git](#-4-cloner-le-dépôt-git)
-  - [🔧🔧 5. Mettre ne place l'environnement](#-5-mettre-ne-place-lenvironnement)
+  - [🔧🔧 5. Mettre en place l'environnement](#-5-mettre-en-place-lenvironnement)
   - [📦🚀 6. Installer les dépendances python](#-6-installer-les-dépendances-python)
 - [🌍 Utilisation & Installation du Site Web](#-utilisation-du-site-web)
   - [▶️ Lancement](#️-lancement)
@@ -340,4 +340,5 @@ Fournir une application Java pour scanner les vulnérabilités Web.
 Dossier visual code : **CLI/BShell/**
 
 ---
+
 
