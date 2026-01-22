@@ -210,7 +210,7 @@ Vérification
 
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v6.0.0
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v6.5.0
 ```
 
 ---
