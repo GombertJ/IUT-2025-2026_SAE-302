@@ -209,7 +209,8 @@ Vérification
 ### 🔧📥 4. Cloner le dépôt Git
 
 ```bash
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v4.0.0
+sudo apt-get install -y git
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v5.0.0
 ```
 
 ---
@@ -231,7 +232,6 @@ _Remarque_ : Ici l'application `bshell` sera accessible comme une commande pour 
 
 #### 🐍 Python
 ```bash
-cd IUT-2025-2026_SAE-302/
 unzip Web.zip -d /opt/bshell/
 ```
 
@@ -241,12 +241,14 @@ unzip Web.zip -d /opt/bshell/
 
 - Installer les dépendances avec :
 ```bash
+cd /opt/bshell/
 source env/bin/activate
 pip3 install -r requirements.txt
 ```
 
 - Ou, installer manuellement les packages nécessaires, par exemple :
 ```bash
+cd /opt/bshell/
 source env/bin/activate
 pip3 install fastapi flask uvicorn asgiref
 ```
@@ -258,6 +260,7 @@ pip3 install fastapi flask uvicorn asgiref
 ### ▶️ Lancement
 
 ```bash
+cd /opt/bshell/
 source env/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
