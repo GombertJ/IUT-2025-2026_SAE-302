@@ -20,9 +20,11 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
 - [🌍 Utilisation & Installation du Site Web](#-utilisation-du-site-web)
   - [▶️ Lancement](#️-lancement)
   - [🧑‍💻 Accès](#-accès)
+- [🫖 Utilisation de l'application Java](#-utilisation-de-l--application-java)
 - [🗃️ Base de données](#️-base-de-données)
 - [🔌 API — Endpoints principaux](#-api--endpoints-principaux)
 - [🎯 Objectif](#-objectif)
+- [📝 Autres](#-autres)
 
 ---
 
@@ -143,6 +145,8 @@ sudo apt install python3 python3-pip
 python3 --version
 ```
 
+---
+
 ### 🫖 2. Installer Java 21 (jdk)
 
 À télécharger : https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
@@ -159,6 +163,8 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/sbin:/bin
 ```
 
 Puis ré-exécuter les commandes au-dessus.
+
+---
 
 ### 🛠️🌐 3. Créer un environnement virtuel
 
@@ -198,11 +204,15 @@ python3 -m venv env
 Vérification
 - La ligne de commande doit afficher le nom de l’environnement, par exemple `(env)`.
 
+---
+
 ### 🔧📥 4. Cloner le dépôt Git
 
 ```bash
 git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v1.0.0
 ```
+
+---
 
 ### 🔧🔧 5. Mettre en place l'environnement
 
@@ -224,6 +234,8 @@ _Remarque_ : Ici l'application `bshell` sera accessible comme une commande pour 
 cd IUT-2025-2026_SAE-302/
 unzip Web.zip -d /opt/bshell/
 ```
+
+---
 
 ### 📦🚀 6. Installer les dépendances python
 
@@ -323,8 +335,9 @@ Fournir une application Java pour scanner les vulnérabilités Web.
 
 ---
 
-## Autres
+## 📝 Autres
 
 Dossier visual code : **CLI/BShell/**
 
 ---
+
