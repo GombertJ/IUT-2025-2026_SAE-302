@@ -210,7 +210,7 @@ Vérification
 
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v5.0.0
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v6.0.0
 ```
 
 ---
@@ -239,6 +239,11 @@ unzip Web.zip -d /opt/bshell/
 
 ### 📦🚀 6. Installer les dépendances python
 
+**Mise en place du venv**:
+```bash
+python3 -m venv env
+```
+
 - Installer les dépendances avec :
 ```bash
 cd /opt/bshell/
@@ -261,7 +266,6 @@ pip3 install fastapi flask uvicorn asgiref
 
 ```bash
 cd /opt/bshell/
-source env/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
