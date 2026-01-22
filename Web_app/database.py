@@ -50,32 +50,38 @@ def generate_row():
     cve_id = f"CVE-{fake.year()}-{random.randint(1000,9999):04d}"
     product = fake.word().capitalize()
     status = random.choice(["open", "closed"])
+    severity = random.choice(["critical", "high", "medium", "low"])
     details = {
-        "cvss": round(random.uniform(0, 10), 1),
-        "notes": fake.sentence()
+        "template-id": fake.sentence(),
+        "matched-at": fake.sentence(),
+        "info": fake.sentence(),
+        "name": fake.sentence(),
+        "severity": severity,
     }
     return (cve_id, product, status, details)
 
 def init_db() -> None:
-    with get_connection() as conn:
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS cve (
-            id      INTEGER PRIMARY KEY AUTOINCREMENT,
-            name    TEXT NOT NULL,
-            target  TEXT NOT NULL,
-            state   TEXT NOT NULL,
-            infos   TEXT NOT NULL
-        );
-        """)
-        result = conn.execute("SELECT COUNT(*) AS number FROM cve;").fetchone()
-        n = result["number"]
-        if n == 0:
-            rows = [generate_row() for _ in range(1000)]
-            conn.executemany(
-                "INSERT INTO cve (name, target, state, infos) VALUES (?, ?, ?, ?);",
-                [(a, b, c, json.dumps(d, ensure_ascii=False)) for (a, b, c, d) in rows]
-            )
-        # Insert chaque ligne de rows dans la base en transformant le dico en json non ASCII
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = _dict_factory
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS cve (
+        id      INTEGER PRIMARY KEY AUTOINCREMENT,
+        name    TEXT NOT NULL,
+        target  TEXT NOT NULL,
+        state   TEXT NOT NULL,
+        infos   TEXT NOT NULL
+    );
+    """)
+    result = conn.execute("SELECT COUNT(*) AS number FROM cve;").fetchone()
+    n = result["number"]
+    if n == 0:
+        rows = [generate_row() for _ in range(1000)]
+        for (a,b,c,d) in rows:
+            conn.execute("INSERT INTO cve (name, target, state, infos) VALUES (?, ?, ?, ?);",
+                        (a, b, c, json.dumps(d, ensure_ascii=False)))
+    conn.commit()
+    conn.close()
+    # Insert chaque ligne de rows dans la base en transformant le dico en json non ASCII
 
 def _decode_infos(row: Dict[str, Any]) -> Dict[str, Any]:
     if row is None:
@@ -165,8 +171,8 @@ def count_db_cve_by_ip(target):
                 except json.JSONDecodeError:
                     continue
 
-            data = [{"cvss": cvss, "COUNT": count} for cvss, count in severity_counts.items()]
-            data = sorted(data, key=lambda x: float(x["cvss"]))
+            data = [{"severity": severity, "COUNT": count} for severity, count in severity_counts.items()]
+            data = sorted(data, key=lambda x: str(x["severity"]))
         else:
             query = f"SELECT {target}, COUNT(*) AS COUNT FROM cve GROUP BY {target}"
             data = conn.execute(query).fetchall()
