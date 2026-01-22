@@ -255,9 +255,9 @@ pip3 install -r requirements.txt
 pip3 install fastapi flask uvicorn asgiref faker
 ```
 
-**Finalisation :** Pour nettoyer et par sécurité. 
+**Finalisation :** 
 ```bash
-chmod 077 /opt/bshell
+chmod 777 -R /opt/bshell/
 ```
 ---
 
@@ -267,7 +267,7 @@ chmod 077 /opt/bshell
 
 ```bash
 cd /opt/bshell/
-uvicorn main:app --host 0.0.0.0 --port 8000
+sudo uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 🧑‍💻 Accès
