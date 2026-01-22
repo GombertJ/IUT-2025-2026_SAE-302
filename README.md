@@ -223,7 +223,6 @@ Selon [FHS](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard), les ap
 ```bash
 cd IUT-2025-2026_SAE-302/
 unzip bshell.zip -d /opt/
-chmod 077 /opt/bshell
 chmod +x /opt/bshell/bin/bshell
 ln -s /opt/bshell/bin/bshell /usr/local/bin/bshell
 ```
@@ -256,6 +255,10 @@ pip3 install -r requirements.txt
 pip3 install fastapi flask uvicorn asgiref faker
 ```
 
+**Finalisation :** Pour nettoyer et par sécurité. 
+```bash
+chmod 077 /opt/bshell
+```
 ---
 
 ## 🌍 Utilisation du Site Web
