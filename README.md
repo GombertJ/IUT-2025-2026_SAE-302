@@ -209,7 +209,7 @@ Vérification
 ### 🔧📥 4. Cloner le dépôt Git
 
 ```bash
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v3.0.0
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v4.0.0
 ```
 
 ---
