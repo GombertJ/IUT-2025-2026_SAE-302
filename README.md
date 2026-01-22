@@ -12,7 +12,7 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
   - [📂 CLI](#-architecture-cli-app-java)
 - [🔧 Installation](#-installation)
   - [🐍💻 1. Installer Python](#-1-installer-python)
-  - [🫖🫖 2. Installer Java 21 (jdk)](#-2-installer-java-21-jdk)
+  - [🫖💻 2. Installer Java 21 (jdk)](#-2-installer-java-21-jdk)
   - [🛠️🌐 3. Créer un environnement virtuel](#️-3-créer-un-environnement-virtuel)
   - [🔧📥 4. Cloner le dépôt Git](#-4-cloner-le-dépôt-git)
   - [🔧🔧 5. Mettre en place l'environnement](#-5-mettre-en-place-lenvironnement)
@@ -147,7 +147,7 @@ python3 --version
 
 ---
 
-### 🫖 2. Installer Java 21 (jdk)
+### 🫖💻 2. Installer Java 21 (jdk)
 
 À télécharger : https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
 
@@ -340,5 +340,6 @@ Fournir une application Java pour scanner les vulnérabilités Web.
 Dossier visual code : **CLI/BShell/**
 
 ---
+
 
 
