@@ -225,7 +225,6 @@ sudo usermod -aG bshell $USER
 ```bash
 cd IUT-2025-2026_SAE-302/
 sudo unzip bshell.zip -d /opt/
-sudo chmod +x /opt/bshell/bin/bshell
 sudo ln -s /opt/bshell/bin/bshell /usr/local/bin/bshell
 ```
 ---
@@ -240,6 +239,8 @@ sudo unzip Web.zip -d /opt/bshell/
 sudo chown -R root:bshell /opt/bshell
 sudo find /opt/bshell -type d -exec chmod 2770 {} \;
 sudo find /opt/bshell -type f -exec chmod 660 {} \;
+sudo chmod +x /opt/bshell/bin/bshell
+
 ```
 
 ---
