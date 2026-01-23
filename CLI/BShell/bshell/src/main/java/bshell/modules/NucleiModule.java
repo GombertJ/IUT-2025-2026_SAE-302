@@ -158,19 +158,19 @@ public class NucleiModule extends AbstractModule {
         for (NucleiResult finding : currentFindings) {
             String name = (finding.info != null && finding.info.name != null) ? finding.info.name : finding.templateId;
             String sev = (finding.info != null && finding.info.severity != null) ? finding.info.severity : "n/a";
-            String url = finding.matchedAt;
+            // String url = finding.matchedAt; // On va juste mettre target car les url générés par nuclei sont trop long
             
-            String uniqueKey = name + "||" + url;
+            String uniqueKey = name + "||" + targetHost;
             seenInCurrentScanKeys.add(uniqueKey);
 
-            Vulnerability existing = findVulnerability(knownVulns, name, url);
+            Vulnerability existing = findVulnerability(knownVulns, name, targetHost);
 
             if (existing == null) {
                 // Cas : nouveau
                 try {
                     String json = gson.toJson(finding);
-                    dbService.saveVulnerability(name, url, "open", json);
-                    printDiffRow("NEW", sev, name, url, GREEN);
+                    dbService.saveVulnerability(name, targetHost, "open", json);
+                    printDiffRow("NEW", sev, name, targetHost, GREEN);
                 } catch (Exception e) {
                     System.out.println(RED + "[ERR] Save failed: " + name + RESET);
                 }
@@ -178,10 +178,10 @@ public class NucleiModule extends AbstractModule {
                 if ("closed".equals(existing.getState())) {
                     // Cas : Close -> Open
                     dbService.updateState(existing.getId(), "open");
-                    printDiffRow("REOPEN", sev, name, url, YELLOW);
+                    printDiffRow("REOPEN", sev, name, targetHost, YELLOW);
                 } else {
                     // Cas : inchangé
-                    printDiffRow("SAME", sev, name, url, GREY);
+                    printDiffRow("SAME", sev, name, targetHost, GREY);
                 }
             }
         }
@@ -209,10 +209,10 @@ public class NucleiModule extends AbstractModule {
     }
 
 
-    private void printDiffRow(String status, String severity, String name, String url, String colorCode) {
+    private void printDiffRow(String status, String severity, String name, String target, String colorCode) {
         // On tronque les textes trop longs pour ne pas casser le tableau
         String tName = truncate(name, 38);
-        String tUrl = truncate(url, 23);
+        String tTarget = truncate(target, 23);
         
         // Astuce : On applique la couleur sur toute la ligne, mais on reset à la fin de chaque cellule 
         // ou à la fin de la ligne pour éviter que la bordure "|" ne prenne la couleur.
@@ -220,7 +220,7 @@ public class NucleiModule extends AbstractModule {
             colorCode, status, RESET,
             colorCode, severity, RESET,
             colorCode, tName, RESET,
-            colorCode, tUrl, RESET
+            colorCode, tTarget, RESET
         );
     }
 
