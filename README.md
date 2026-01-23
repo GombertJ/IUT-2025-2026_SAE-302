@@ -178,22 +178,9 @@ cd mon_projet
 ```bash
 python -m venv env
 ```
-ou, si `python` pointe vers Python 2, utiliser :
-```bash
-python3 -m venv env
-```
+
 
 - Activer l’environnement virtuel :
-
-  - Sur Windows (PowerShell) :
-  ```bash
-  .\env\Scripts\activate
-  ```
-
-  - Sur Windows (CMD) :
-  ```bash
-  env\Scripts\activate.bat
-  ```
 
   - Sur macOS/Linux :
   ```bash
@@ -209,7 +196,7 @@ Vérification
 
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v8.0.0
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v9.0.0
 ```
 
 ---
@@ -237,18 +224,27 @@ sudo usermod -aG bshell $USER
 #### 🫖 Installation de l'application Java
 ```bash
 cd IUT-2025-2026_SAE-302/
-unzip bshell.zip -d /opt/
-chmod +x /opt/bshell/bin/bshell
-ln -s /opt/bshell/bin/bshell /usr/local/bin/bshell
+sudo unzip bshell.zip -d /opt/
+sudo chmod +x /opt/bshell/bin/bshell
+sudo ln -s /opt/bshell/bin/bshell /usr/local/bin/bshell
 ```
 ---
 #### 🐍 Installation de l'application Web
 ```bash
-unzip Web.zip -d /opt/bshell/
+sudo unzip Web.zip -d /opt/bshell/
 ```
 ---
 
 #### 🔐 Gestion des permissions
+```bash
+sudo chown -R root:bshell /opt/bshell
+sudo find /opt/bshell -type d -exec chmod 2770 {} \;
+sudo find /opt/bshell -type f -exec chmod 660 {} \;
+```
+
+---
+#### 🐍 Environnement Python
+
 ```bash
 cd /opt/bshell/
 python3 -m venv env
