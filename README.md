@@ -16,7 +16,6 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
   - [🛠️🌐 3. Créer un environnement virtuel](#️-3-créer-un-environnement-virtuel)
   - [🔧📥 4. Cloner le dépôt Git](#-4-cloner-le-dépôt-git)
   - [🔧🔧 5. Mettre en place l'environnement](#-5-mettre-en-place-lenvironnement)
-  - [📦🚀 6. Installer les dépendances python](#-6-installer-les-dépendances-python)
 - [🌍 Utilisation & Installation du Site Web](#-utilisation-du-site-web)
   - [▶️ Lancement](#️-lancement)
   - [🧑‍💻 Accès](#-accès)
@@ -217,57 +216,54 @@ git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v7.0.0
 
 ### 🔧🔧 5. Mettre en place l'environnement
 
-Selon [FHS](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard), les applications externes (donc ce qui est non paquet) est généralement mis dans /opt
+Conformément au [FHS](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard), l’application est installée dans `/opt`.
 
-#### 🫖 Java
+L’application Web (Python) et l’application CLI (Java) partagent une base SQLite.  
+Un **groupe Unix commun** est utilisé afin de garantir des permissions cohérentes.
+
+---
+
+#### 👥 Création du groupe applicatif
+
+```bash
+sudo groupadd bshell
+sudo usermod -aG bshell $USER
+```
+
+**⚠️ Remarque :** Reconnexion requise.
+
+---
+
+#### 🫖 Installation de l'application Java
 ```bash
 cd IUT-2025-2026_SAE-302/
 unzip bshell.zip -d /opt/
 chmod +x /opt/bshell/bin/bshell
 ln -s /opt/bshell/bin/bshell /usr/local/bin/bshell
 ```
-
-_Remarque_ : Ici l'application `bshell` sera accessible comme une commande pour l'utilisateur. 
-
-#### 🐍 Python
+---
+#### 🐍 Installation de l'application Web
 ```bash
 unzip Web.zip -d /opt/bshell/
 ```
-
 ---
 
-### 📦🚀 6. Installer les dépendances python
-
-**Mise en place du venv**:
+#### 🔐 Gestion des permissions
 ```bash
 cd /opt/bshell/
 python3 -m venv env
 source env/bin/activate
-```
-
-- Installer les dépendances avec :
-```bash
 pip3 install -r requirements.txt
 ```
-
-- Ou, installer manuellement les packages nécessaires, par exemple :
-```bash
-pip3 install fastapi flask uvicorn asgiref faker
-```
-
-**Finalisation :** 
-```bash
-chmod 777 -R /opt/bshell/
-```
 ---
-
 ## 🌍 Utilisation du Site Web
 
 ### ▶️ Lancement
 
 ```bash
 cd /opt/bshell/
-sudo uvicorn main:app --host 0.0.0.0 --port 8000
+source env/bin/activate
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 🧑‍💻 Accès
