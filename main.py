@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import FileResponse
 
 from Web_app.database import (
+    init_db,
     list_cves,
     list_cves_paged,
     count_cves,
@@ -24,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialisation de la DB
+init_db()
 
 # Servir /static/ (CSS, JS…)
 app.mount("/static", StaticFiles(directory="Web_app/static"), name="static")
