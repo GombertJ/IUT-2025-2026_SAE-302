@@ -147,21 +147,21 @@ Gradle Scripts/
 ```
 
 **Explication :**
--app : C'est le cœur de notre application, tout notre code se trouve ici.
--manifests : Il contient les fichiers qui autorisent l'application à exister et à interagir avec le téléphone.
--AndroidManifest.xml : Il déclare les éléments essentiels, les permissions nécessaires, le nom de l'application et l'icône principale.
--java : on retrouve tout le code source de l'application.
--com.example.bowsershell : C'est le "Package Name". Il sert d'identifiant unique pour notre application sur le système et le Play Store.
--MainActivity : Elle contient le code pour récupérer la liste des CVE sur le site web via l'API et l'afficher dans une liste, c'est donc notre première activité.
--MainActivity2 : Quand l'utilisateur clique sur une CVE dans la première activité, l'application lance la deuxième activité qui affiche les informations de la faille.
--res : Ce dossier contient tout ce qui concerne l'apparence.
--layout : Ce dossier contient la structure visuelle des écrans en XML.
--activity_main.xml : Le "squelette" de l'écran de la première activité.
--activity_main2.xml : Le "squelette" de l'écran de la deuxième activité.
--drawable : Ce dossier contient les éléments graphiques.
--bowsershell_logo.png : L'image source de notre logo.
--Gradle Scripts : Ce répertoire contient les fichiers de configuration de Gradle, l'outil qui automatise la compilation, le test et le déploiement de notre application.
--build.gradle.ks : C'est ici que l'on ajoute des bibliothèques externes.
+- app : C'est le cœur de notre application, tout notre code se trouve ici.
+- manifests : Il contient les fichiers qui autorisent l'application à exister et à interagir avec le téléphone.
+- AndroidManifest.xml : Il déclare les éléments essentiels, les permissions nécessaires, le nom de l'application et l'icône principale.
+- java : on retrouve tout le code source de l'application.
+- com.example.bowsershell : C'est le "Package Name". Il sert d'identifiant unique pour notre application sur le système et le Play Store.
+- MainActivity : Elle contient le code pour récupérer la liste des CVE sur le site web via l'API et l'afficher dans une liste, c'est donc notre première activité.
+- MainActivity2 : Quand l'utilisateur clique sur une CVE dans la première activité, l'application lance la deuxième activité qui affiche les informations de la faille.
+- res : Ce dossier contient tout ce qui concerne l'apparence.
+- layout : Ce dossier contient la structure visuelle des écrans en XML.
+- activity_main.xml : Le "squelette" de l'écran de la première activité.
+- activity_main2.xml : Le "squelette" de l'écran de la deuxième activité.
+- drawable : Ce dossier contient les éléments graphiques.
+- bowsershell_logo.png : L'image source de notre logo.
+- Gradle Scripts : Ce répertoire contient les fichiers de configuration de Gradle, l'outil qui automatise la compilation, le test et le déploiement de notre application.
+- build.gradle.ks : C'est ici que l'on ajoute des bibliothèques externes.
 
 ---
 
@@ -400,6 +400,7 @@ Fournir une application Java pour scanner les vulnérabilités Web.
 Dossier visual code : **CLI/BShell/**
 
 ---
+
 
 
 
