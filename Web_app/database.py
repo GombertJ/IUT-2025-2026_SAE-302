@@ -1,4 +1,4 @@
-import sqlite3, json
+import sqlite3, json, os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from collections import defaultdict
