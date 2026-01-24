@@ -170,10 +170,7 @@ def count_db_cve_by_ip(target):
                     if not info_raw:
                         continue
 
-                    info_decoded = urllib.parse.unquote(info_raw)
-                    info = json.loads(info_decoded)
-
-                    severity_value = info.get("severity")
+                    severity_value = info_raw.get("severity")
                     if severity_value is not None:
                         severity_counts[severity_value] += 1
 
