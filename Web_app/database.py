@@ -40,6 +40,25 @@ def get_connection():
     finally:
         _close_conn(conn)
 
+def init_db():
+    if os.path.exists(DB_PATH):
+        return "Base déjà crée"
+    try:
+        with get_connection() as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS cve (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    target TEXT,
+                    state TEXT,
+                    infos TEXT
+                )
+            ''')
+            
+            conn.commit()
+    except sqlite3.Error as e:
+        print(f"[-] Erreur lors de l'initialisation : {e}")
+
 def _decode_infos(row: Dict[str, Any]) -> Dict[str, Any]:
     if row is None:
         return row
