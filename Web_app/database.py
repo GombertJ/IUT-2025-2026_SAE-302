@@ -40,49 +40,6 @@ def get_connection():
     finally:
         _close_conn(conn)
 
-from faker import Faker
-import random
-import json
-
-fake = Faker()
-
-def generate_row():
-    cve_id = f"CVE-{fake.year()}-{random.randint(1000,9999):04d}"
-    product = fake.word().capitalize()
-    status = random.choice(["open", "closed"])
-    severity = random.choice(["critical", "high", "medium", "low"])
-    details = {
-        "template-id": fake.sentence(),
-        "matched-at": fake.sentence(),
-        "info": fake.sentence(),
-        "name": fake.sentence(),
-        "severity": severity,
-    }
-    return (cve_id, product, status, details)
-
-def init_db() -> None:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = _dict_factory
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS cve (
-        id      INTEGER PRIMARY KEY AUTOINCREMENT,
-        name    TEXT NOT NULL,
-        target  TEXT NOT NULL,
-        state   TEXT NOT NULL,
-        infos   TEXT NOT NULL
-    );
-    """)
-    result = conn.execute("SELECT COUNT(*) AS number FROM cve;").fetchone()
-    n = result["number"]
-    if n == 0:
-        rows = [generate_row() for _ in range(1000)]
-        for (a,b,c,d) in rows:
-            conn.execute("INSERT INTO cve (name, target, state, infos) VALUES (?, ?, ?, ?);",
-                        (a, b, c, json.dumps(d, ensure_ascii=False)))
-    conn.commit()
-    conn.close()
-    # Insert chaque ligne de rows dans la base en transformant le dico en json non ASCII
-
 def _decode_infos(row: Dict[str, Any]) -> Dict[str, Any]:
     if row is None:
         return row
