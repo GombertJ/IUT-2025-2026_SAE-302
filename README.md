@@ -19,6 +19,7 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
   - [🔧📥 5. Cloner le dépôt Git](#-5-cloner-le-dépôt-git)
   - [🔧🔧 6. Mettre en place l'environnement](#-6-mettre-en-place-lenvironnement)
 - [🌍 Utilisation & Installation du Site Web](#-utilisation-du-site-web)
+  - [🌍 Reverse Tunnel SSH](#-reverse-tunnel-ssh)
   - [▶️ Lancement](#️-lancement)
   - [🧑‍💻 Accès](#-accès)
 - [🫖 Utilisation de l'application Java](#-utilisation-de-lapplication-java)
@@ -252,7 +253,7 @@ Vérification
 
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.2
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.3
 ```
 
 ---
@@ -311,15 +312,32 @@ pip3 install -r requirements.txt
 ---
 ## 🌍 Utilisation du Site Web
 
+### 🌍 Reverse Tunnel SSH
+**Pourquoi ?**
+
+L'accès au site via http://10.3.122.10:50021/ était prévu pour la validation Android. Toutefois, le retard de l'équipe Android ne nous a pas permis de valider cette configuration avec l'enseignant dans les délais impartis. De plus, le routage du réseau privé de la VM n'étant pas propagé au travers du VPN, l'accès distant reste impossible pour les tests.
+
+**La solution** :
+```bash
+ssh -f -N -R 8000:localhost:8000 user@pc_client_vpn
+```
+
+**PS :** Ne pas oubliez de remplacer `user` et `pc_client_vpn` par l'utilisateur et l'ip de la machine servant à faire la demo ! Et surtout installer un serveur ssh sur le poste utilisé...
+
+**Explication :**
+
+- _-f -N_ : Permet de mettre en background la commande
+- _-R 8000:localhost:8000_ : crée un tunnel forwardant le port 8000 du serveur vers le port 8000 du client.
+
 ### ▶️ Lancement
 
 ```bash
 cd /opt/bshell/
 source env/bin/activate
-uvicorn main:app --host 0.0.0.0 --port 80
+uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-### 🧑‍💻 Accès
+### 🧑‍💻 Accès en interne
 
 | Élément | URL |
 |--------|-----|
