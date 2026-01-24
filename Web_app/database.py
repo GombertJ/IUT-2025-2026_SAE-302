@@ -165,13 +165,25 @@ def count_db_cve_by_ip(target):
                 infos_json = row['infos']
                 try:
                     infos = json.loads(infos_json)
-                    severity_value = infos.get('severity', None)
+
+                    info_raw = infos.get("info")
+                    if not info_raw:
+                        continue
+
+                    info_decoded = urllib.parse.unquote(info_raw)
+                    info = json.loads(info_decoded)
+
+                    severity_value = info.get("severity")
                     if severity_value is not None:
                         severity_counts[severity_value] += 1
+
                 except json.JSONDecodeError:
                     continue
 
-            data = [{"severity": severity, "COUNT": count} for severity, count in severity_counts.items()]
+            data = [
+                {"severity": severity, "COUNT": count}
+                for severity, count in severity_counts.items()
+            ]
             data = sorted(data, key=lambda x: str(x["severity"]))
         else:
             query = f"SELECT {target}, COUNT(*) AS COUNT FROM cve GROUP BY {target}"
