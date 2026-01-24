@@ -14,9 +14,10 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
 - [🔧 Installation](#-installation)
   - [🐍💻 1. Installer Python](#-1-installer-python)
   - [🫖💻 2. Installer Java 21 (jdk)](#-2-installer-java-21-jdk)
-  - [🛠️🌐 3. Créer un environnement virtuel](#️-3-créer-un-environnement-virtuel)
-  - [🔧📥 4. Cloner le dépôt Git](#-4-cloner-le-dépôt-git)
-  - [🔧🔧 5. Mettre en place l'environnement](#-5-mettre-en-place-lenvironnement)
+  - [📱​💻 3. Installer Android Studio](#-3-installer-android-studio)
+  - [🛠️🌐 4. Créer un environnement virtuel](#️-4-créer-un-environnement-virtuel)
+  - [🔧📥 5. Cloner le dépôt Git](#-5-cloner-le-dépôt-git)
+  - [🔧🔧 6. Mettre en place l'environnement](#-6-mettre-en-place-lenvironnement)
 - [🌍 Utilisation & Installation du Site Web](#-utilisation-du-site-web)
   - [▶️ Lancement](#️-lancement)
   - [🧑‍💻 Accès](#-accès)
@@ -237,7 +238,7 @@ python -m venv env
 
 - Activer l’environnement virtuel :
 
-  - Sur macOS/Linux :
+  - Sur Linux :
   ```bash
   source env/bin/activate
   ```
@@ -251,7 +252,7 @@ Vérification
 
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.0
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.1
 ```
 
 ---
