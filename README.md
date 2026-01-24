@@ -10,6 +10,7 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
 - [📂 Architecture](#-architecture)
   - [📂 Web](#-architecture-web)
   - [📂 CLI](#-architecture-cli-app-java)
+  - [📂 Android](#-android-studio)
 - [🔧 Installation](#-installation)
   - [🐍💻 1. Installer Python](#-1-installer-python)
   - [🫖💻 2. Installer Java 21 (jdk)](#-2-installer-java-21-jdk)
@@ -20,8 +21,9 @@ Elle contient **une API FastAPI (interface machine / Android / interface utilisa
   - [▶️ Lancement](#️-lancement)
   - [🧑‍💻 Accès](#-accès)
 - [🫖 Utilisation de l'application Java](#-utilisation-de-lapplication-java)
+- [📱​ Utilisation de l'application Android Studio](#-utilisation-de-lapplication-android-studio)
 - [🗃️ Base de données](#️-base-de-données)
-- [🔌 API — Endpoints principaux](#-api--endpoints-principaux)
+- [API — Endpoints principaux](#-api--endpoints-principaux)
 - [🎯 Objectif](#-objectif)
 - [📝 Autres](#-autres)
 
