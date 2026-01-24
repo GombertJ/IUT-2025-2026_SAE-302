@@ -253,7 +253,7 @@ Vérification
 
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.3
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.4
 ```
 
 ---
