@@ -252,7 +252,7 @@ Vérification
 
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.1
+git clone https://github.com/GombertJ/IUT-2025-2026_SAE-302.git --branch v10.0.2
 ```
 
 ---
@@ -316,7 +316,7 @@ pip3 install -r requirements.txt
 ```bash
 cd /opt/bshell/
 source env/bin/activate
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 0.0.0.0 --port 80
 ```
 
 ### 🧑‍💻 Accès
